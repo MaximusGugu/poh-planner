@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Room Planner</title>
+<style>
+  :root{ --cell: 9px; }
+  body{
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0; padding: 18px;
+    background: #f4f4f4;
+    color: #222;
+    user-select: none;
+  }
+  h1{ font-size: 20px; margin: 0 0 4px; }
+  .sub{ font-size: 12px; color: #666; margin-bottom: 12px; }
+  .layout{ display: flex; gap: 20px; align-items: flex-start; }
+
+  .plot-wrap{ flex-shrink: 0; }
+  #plot{
+    position: relative;
+    background-image:
+      linear-gradient(to right, #ddd 1px, transparent 1px),
+      linear-gradient(to bottom, #ddd 1px, transparent 1px);
+    background-size: var(--cell) var(--cell);
+    border: 2px solid #333;
+    background-color: #fff;
+    overflow: hidden;
+  }
+  .room{ position:absolute; }
+  .guide{ position:absolute; background: rgba(30,110,220,0.35); z-index: 1; pointer-events:none; }
+  .guide.mid{ background: rgba(30,110,220,0.55); }
+  .blk{ position:absolute; box-sizing:border-box; border: 1px solid rgba(0,0,0,0.35); }
+  .poly{ position:absolute; box-sizing:border-box; border: 1px solid rgba(0,0,0,0.45); top:0; left:0; }
+  .door{ position:absolute; background:#e53030; z-index: 4; }
+  .lbl{
+    position:absolute; z-index: 5; font-size: 10px; font-weight:bold;
+    color:#111; background: rgba(255,255,255,0.8);
+    padding: 1px 3px; border-radius:3px; pointer-events:none; white-space:nowrap;
+    top:50%; left:50%; transform: translate(-50%,-50%);
+  }
+  .room:hover .blk, .room:hover .poly{ filter: brightness(0.9); cursor:pointer; }
+
+  .top-bar{ display:flex; gap: 16px; align-items:center; margin-bottom: 10px; font-size: 13px; }
+  .top-bar button{ padding: 5px 10px; font-size: 12px; cursor:pointer; }
+  #total{ font-weight:bold; font-size: 15px; }
+
+  #palette{
+    width: 640px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    align-content: start;
+  }
+  .shape-item{
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: grab;
+    display:flex; flex-direction:column; align-items:center;
+    gap: 3px;
+    background:#fff;
+  }
+  .shape-item:active{ cursor:grabbing; }
+  .shape-preview{ position: relative; width: 70px; height: 70px; }
+  .shape-preview .blk{ position:absolute; box-sizing:border-box; border: 1px solid rgba(0,0,0,0.35); }
+  .shape-name{ font-size: 11px; font-weight:bold; text-align:center; }
+  .shape-price{ font-size: 10px; color:#333; }
+  .shape-est{ font-size: 9px; color:#a60; }
+  .help{ font-size: 11px; color:#666; margin-top: 8px; line-height:1.4; grid-column: 1 / -1; }
+
+  #ghost{
+    position: fixed; pointer-events:none; z-index: 1000; opacity:0.75;
+  }
+  #ghost .blk, #ghost .poly{ position:absolute; box-sizing:border-box; }
+</style>
+</head>
+<body>
+
+<h1>Room Planner</h1>
+<div class="sub">Drag a room from the panel onto the plot. While dragging, scroll the mouse wheel to rotate 90°. Drag a placed room to move it, or click it (without dragging) to remove it.</div>
+
+<div class="top-bar">
+  <div>Rooms placed: <span id="count">0</span> / 25</div>
+  <div id="total">Total: 0 gp</div>
+  <button id="clearBtn">Clear All</button>
+</div>
+
+<div class="layout">
+  <div class="plot-wrap">
+    <div id="plot"></div>
+  </div>
+  <div id="palette"></div>
+</div>
+
+<div id="ghost" style="display:none;"></div>
+
+<script>
+const CELL = 9;       // px per unit square
+const COLS = 46;      // plot width in units
+const ROWS = 48;      // plot height in units
+
+// ---- Shape definitions ----
+// matrix: unit grid used for collision/placement (approximate raster footprint).
+// polygon (optional): true straight-edge outline, as [x%,y%] pairs of the bounding
+// box, used for rendering shapes that have real diagonal (non-staircase) walls.
+const SHAPES = [
+  { name:"Square", price:1000, estimated:false, color:"#cfe8ff",
+    matrix: fullRect(8,8),
+    doors: [{side:'top',pos:3},{side:'bottom',pos:3},{side:'left',pos:3},{side:'right',pos:3}] },
+  { name:"Square (small)", price:10000, estimated:false, color:"#ffe0cf",
+    matrix: fullRect(4,4),
+    doors: [{side:'top',pos:1},{side:'bottom',pos:1},{side:'left',pos:1},{side:'right',pos:1}] },
+  { name:"Square (Large)", price:500000, estimated:false, color:"#e0d0ff",
+    matrix: fullRect(16,16),
+    doors: [
+      {side:'top',pos:3},{side:'top',pos:7},{side:'top',pos:11},
+      {side:'bottom',pos:3},{side:'bottom',pos:7},{side:'bottom',pos:11},
+      {side:'left',pos:3},{side:'left',pos:7},{side:'left',pos:11},
+      {side:'right',pos:3},{side:'right',pos:7},{side:'right',pos:11}
+    ] },
+  { name:"Hallway (Large)", price:250000, estimated:false, color:"#c2fff3",
+    matrix: fullRect(8,16),
+    doors: [
+      {side:'top',pos:3},{side:'bottom',pos:3},
+      {side:'left',pos:3},{side:'left',pos:7},{side:'left',pos:11},
+      {side:'right',pos:3},{side:'right',pos:7},{side:'right',pos:11}
+    ] },
+  { name:"Hallway (Long)", price:30000, estimated:false, color:"#fff3c2",
+    matrix: fullRect(4,16),
+    doors: [
+      {side:'top',pos:1},{side:'bottom',pos:1},
+      {side:'left',pos:3},{side:'left',pos:7},{side:'left',pos:11},
+      {side:'right',pos:3},{side:'right',pos:7},{side:'right',pos:11}
+    ] },
+  { name:"Hallway", price:5000, estimated:false, color:"#e8e0d0",
+    matrix: fullRect(4,8),
+    doors: [{side:'top',pos:1},{side:'bottom',pos:1},{side:'left',pos:3},{side:'right',pos:3}] },
+  { name:"Octagon", price:150000, estimated:false, color:"#d8ffd0",
+    matrix: octagonMatrix(),
+    polygon: [[25,0],[75,0],[100,25],[100,75],[75,100],[25,100],[0,75],[0,25]],
+    doors: [{side:'top',pos:3},{side:'bottom',pos:3},{side:'left',pos:3},{side:'right',pos:3}] },
+  { name:"Cross", price:50000, estimated:false, color:"#ffd8f2",
+    matrix: plusShape(),
+    doors: [{side:'top',pos:3},{side:'bottom',pos:3},{side:'left',pos:3},{side:'right',pos:3}] },
+  { name:"T-Shape", price:50000, estimated:false, color:"#e8e8b0",
+    matrix: tShape(),
+    doors: [{side:'left',pos:1},{side:'right',pos:1},{side:'bottom',pos:3},{side:'top',pos:3}] },
+  { name:"End (rounded)", price:175000, estimated:false, color:"#ffe9b3",
+    matrix: dShapeMatrix(),
+    polygon: [[0,0],[62.5,0],[100,37.5],[100,62.5],[62.5,100],[0,100]],
+    doors: [{side:'left',pos:3}] },
+  { name:"Corner (rounded)", price:125000, estimated:false, color:"#d0f0ff",
+    matrix: cornerMatrix(),
+    polygon: [[0,0],[62.5,0],[100,37.5],[100,100],[0,100]],
+    doors: [{side:'left',pos:3},{side:'bottom',pos:3}] },
+  { name:"Corner", price:50000, estimated:false, color:"#f0d0d0",
+    matrix: lShape(),
+    doors: [{side:'top',pos:1},{side:'right',pos:5},{side:'bottom',pos:4},{side:'left',pos:3}] },
+];
+
+function fullRect(w,h){
+  const rows = [];
+  for(let r=0;r<h;r++) rows.push("X".repeat(w));
+  return rows;
+}
+
+// Raster approximations used only for collision/footprint purposes.
+// Straight-line diagonal side (length 2): rows taper 4 -> 6 -> 8(full).
+function octagonMatrix(){
+  return [
+    "..XXXX..",
+    ".XXXXXX.",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    ".XXXXXX.",
+    "..XXXX.."
+  ];
+}
+
+function plusShape(){
+  return [
+    "..XXXX..",
+    "..XXXX..",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "..XXXX..",
+    "..XXXX.."
+  ];
+}
+
+function tShape(){
+  const rows = [];
+  for(let r=0;r<4;r++) rows.push("XXXXXXXX");
+  for(let r=0;r<4;r++) rows.push("..XXXX..");
+  return rows;
+}
+
+// Straight-line diagonal (length 3): rows taper 5 -> 6 -> 7 -> 8(full) mirrored.
+// Padded to a full rectangular 8-wide grid so rotation doesn't distort it.
+function dShapeMatrix(){
+  const base = 5, maxExt = 3;
+  const ext = [1,2,3,3,3,3,2,1];
+  return ext.map(e => "X".repeat(base+e) + ".".repeat(maxExt-e));
+}
+
+// Corner: 8x8, top-right corner cut: 5 horizontal -> 3 diagonal -> 5 vertical.
+function cornerMatrix(){
+  return [
+    "XXXXX...",
+    "XXXXXX..",
+    "XXXXXXX.",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX",
+    "XXXXXXXX"
+  ];
+}
+
+function lShape(){
+  const rows = [];
+  for(let r=0;r<4;r++) rows.push("XXXX" + ".".repeat(4));
+  for(let r=0;r<4;r++) rows.push("X".repeat(8));
+  return rows;
+}
+
+function rotateMatrix(m){
+  const rows = m.length, cols = m[0].length;
+  const res = [];
+  for(let c=0;c<cols;c++){
+    let row = "";
+    for(let r=rows-1;r>=0;r--) row += m[r][c];
+    res.push(row);
+  }
+  return res;
+}
+
+// Rotates a door {side,pos} the same way rotateMatrix rotates the grid (90deg CW),
+// applied `times` times starting from the shape's base (rotation-0) dimensions.
+function rotateDoors(doors, baseRows, baseCols, times){
+  const sideMap = { top:'right', right:'bottom', bottom:'left', left:'top' };
+  let rows = baseRows, cols = baseCols;
+  let list = doors.map(d => ({side:d.side, pos:d.pos}));
+  for(let t=0;t<times;t++){
+    list = list.map(d => {
+      const newSide = sideMap[d.side];
+      const newPos = (d.side === 'left' || d.side === 'right') ? (rows - d.pos - 2) : d.pos;
+      return { side:newSide, pos:newPos };
+    });
+    const nr = cols, nc = rows;
+    rows = nr; cols = nc;
+  }
+  return list;
+}
+
+// ---- Plot / state ----
+const plotEl = document.getElementById('plot');
+plotEl.style.width = (COLS*CELL)+'px';
+plotEl.style.height = (ROWS*CELL)+'px';
+
+function addGuide(isVertical, fraction, isMid){
+  const g = document.createElement('div');
+  g.className = 'guide' + (isMid ? ' mid' : '');
+  if(isVertical){
+    g.style.left = Math.round(COLS*fraction*CELL)+'px';
+    g.style.top = '0';
+    g.style.width = '2px';
+    g.style.height = (ROWS*CELL)+'px';
+  } else {
+    g.style.top = Math.round(ROWS*fraction*CELL)+'px';
+    g.style.left = '0';
+    g.style.height = '2px';
+    g.style.width = (COLS*CELL)+'px';
+  }
+  plotEl.appendChild(g);
+}
+[0.25, 0.5, 0.75].forEach(f => {
+  addGuide(true, f, f === 0.5);
+  addGuide(false, f, f === 0.5);
+});
+
+const paletteEl = document.getElementById('palette');
+const countEl = document.getElementById('count');
+const totalEl = document.getElementById('total');
+const ghostEl = document.getElementById('ghost');
+
+let occupied = Array.from({length:ROWS}, ()=>Array(COLS).fill(false));
+let placedRooms = [];
+let placedIdSeq = 0;
+
+function fmtGp(n){ return n.toLocaleString() + " gp"; }
+
+function polygonClipPath(points){
+  return 'polygon(' + points.map(p => p[0]+'% '+p[1]+'%').join(',') + ')';
+}
+
+// Renders either per-cell blocks (normal shapes) or a single clip-path shape
+// (shapes with straight diagonal walls), into `container`.
+function renderShape(container, shapeDef, matrix, cellPx, polyRot){
+  if(shapeDef.polygon){
+    const w = matrix[0].length*cellPx;
+    const h = matrix.length*cellPx;
+    const d = document.createElement('div');
+    d.className = 'poly';
+    d.style.width = w+'px';
+    d.style.height = h+'px';
+    d.style.background = shapeDef.color;
+    d.style.backgroundImage =
+      'linear-gradient(to right, rgba(0,0,0,0.35) 1px, transparent 1px),' +
+      'linear-gradient(to bottom, rgba(0,0,0,0.35) 1px, transparent 1px)';
+    d.style.backgroundSize = cellPx+'px '+cellPx+'px';
+    d.style.clipPath = polygonClipPath(shapeDef.polygon);
+    d.style.transform = 'rotate(' + (polyRot*90) + 'deg)';
+    d.style.transformOrigin = 'center';
+    container.appendChild(d);
+  } else {
+    matrix.forEach((row,r)=>{
+      [...row].forEach((ch,c)=>{
+        if(ch === 'X'){
+          const b = document.createElement('div');
+          b.className = 'blk';
+          b.style.left = (c*cellPx)+'px';
+          b.style.top = (r*cellPx)+'px';
+          b.style.width = cellPx+'px';
+          b.style.height = cellPx+'px';
+          b.style.background = shapeDef.color;
+          container.appendChild(b);
+        }
+      });
+    });
+  }
+
+  if(shapeDef.doors && shapeDef.doors.length){
+    const baseRows = shapeDef.matrix.length, baseCols = shapeDef.matrix[0].length;
+    const doors = rotateDoors(shapeDef.doors, baseRows, baseCols, polyRot);
+    const w = matrix[0].length*cellPx, h = matrix.length*cellPx;
+    const thick = Math.max(3, Math.round(cellPx*0.35));
+    doors.forEach(door => {
+      const dd = document.createElement('div');
+      dd.className = 'door';
+      if(door.side === 'top' || door.side === 'bottom'){
+        dd.style.width = (2*cellPx)+'px';
+        dd.style.height = thick+'px';
+        dd.style.left = (door.pos*cellPx)+'px';
+        dd.style.top = (door.side==='top' ? -thick/2 : h - thick/2) + 'px';
+      } else {
+        dd.style.height = (2*cellPx)+'px';
+        dd.style.width = thick+'px';
+        dd.style.top = (door.pos*cellPx)+'px';
+        dd.style.left = (door.side==='left' ? -thick/2 : w - thick/2) + 'px';
+      }
+      container.appendChild(dd);
+    });
+  }
+}
+
+function buildPalette(){
+  paletteEl.innerHTML = '';
+  SHAPES.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'shape-item';
+    item.dataset.idx = i;
+
+    const preview = document.createElement('div');
+    preview.className = 'shape-preview';
+    const m = s.matrix;
+    const maxDim = Math.max(m.length, m[0].length);
+    const pxCell = Math.floor(64 / maxDim);
+    renderShape(preview, s, m, pxCell, 0);
+
+    const name = document.createElement('div');
+    name.className = 'shape-name';
+    name.textContent = s.name;
+
+    const price = document.createElement('div');
+    price.className = s.estimated ? 'shape-est' : 'shape-price';
+    price.textContent = (s.estimated? 'Est: ':'') + fmtGp(s.price) + (s.estimated? ' *':'');
+
+    item.appendChild(preview);
+    item.appendChild(name);
+    item.appendChild(price);
+
+    item.addEventListener('mousedown', (e) => startDrag(e, i));
+
+    paletteEl.appendChild(item);
+  });
+}
+
+// ---- Custom drag & drop with wheel-to-rotate ----
+// drag modes: 'new' (from palette) or 'move' (existing placed room)
+let drag = null; // { mode, idx, matrix, polyRot, moveId, startX, startY, moved }
+
+function startDrag(e, idx){
+  e.preventDefault();
+  drag = {
+    mode: 'new',
+    idx,
+    matrix: SHAPES[idx].matrix,
+    polyRot: 0
+  };
+  ghostEl.style.display = 'block';
+  renderGhost();
+  moveGhost(e.clientX, e.clientY);
+
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+  window.addEventListener('wheel', onDragWheel, { passive:false });
+}
+
+function startMoveDrag(e, room){
+  e.preventDefault();
+  drag = {
+    mode: 'move',
+    idx: room.idx,
+    matrix: room.matrix,
+    polyRot: room.polyRot,
+    moveId: room.id,
+    startX: e.clientX,
+    startY: e.clientY,
+    moved: false
+  };
+
+  // free up its current cells while dragging, and hide the placed element
+  room.cells.forEach(([r,c]) => occupied[r][c] = false);
+  room.el.style.display = 'none';
+
+  ghostEl.style.display = 'block';
+  renderGhost();
+  moveGhost(e.clientX, e.clientY);
+
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('mouseup', onDragEnd);
+  window.addEventListener('wheel', onDragWheel, { passive:false });
+}
+
+function renderGhost(){
+  ghostEl.innerHTML = '';
+  const s = SHAPES[drag.idx];
+  const m = drag.matrix;
+  ghostEl.style.width = (m[0].length*CELL)+'px';
+  ghostEl.style.height = (m.length*CELL)+'px';
+  renderShape(ghostEl, s, m, CELL, drag.polyRot);
+}
+
+function moveGhost(clientX, clientY){
+  const w = drag.matrix[0].length*CELL;
+  const h = drag.matrix.length*CELL;
+  ghostEl.style.left = (clientX - w/2)+'px';
+  ghostEl.style.top = (clientY - h/2)+'px';
+}
+
+function onDragMove(e){
+  if(!drag) return;
+  if(drag.mode === 'move'){
+    const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+    if(Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+  }
+  moveGhost(e.clientX, e.clientY);
+}
+
+function onDragWheel(e){
+  if(!drag) return;
+  e.preventDefault();
+  drag.matrix = rotateMatrix(drag.matrix);
+  drag.polyRot = (drag.polyRot + 1) % 4;
+  if(drag.mode === 'move') drag.moved = true;
+  renderGhost();
+  moveGhost(e.clientX, e.clientY);
+}
+
+function onDragEnd(e){
+  if(!drag) return;
+  const rect = plotEl.getBoundingClientRect();
+  const w = drag.matrix[0].length*CELL;
+  const h = drag.matrix.length*CELL;
+  const gx = e.clientX - w/2;
+  const gy = e.clientY - h/2;
+  const overPlot = gx + w > rect.left && gx < rect.right && gy + h > rect.top && gy < rect.bottom;
+  const left = Math.round((gx - rect.left) / CELL);
+  const top = Math.round((gy - rect.top) / CELL);
+
+  if(drag.mode === 'new'){
+    if(overPlot) placeRoom(drag.idx, drag.matrix, top, left, drag.polyRot);
+  } else {
+    // move mode
+    const room = placedRooms.find(p => p.id === drag.moveId);
+    if(!drag.moved){
+      // treated as a click -> remove the room
+      removeRoom(drag.moveId);
+    } else if(overPlot && canPlace(drag.matrix, top, left)){
+      updateRoomPosition(room, drag.matrix, top, left, drag.polyRot);
+    } else {
+      // invalid drop: restore to original spot/orientation
+      updateRoomPosition(room, room.matrix, room.top, room.left, room.polyRot);
+    }
+  }
+
+  ghostEl.style.display = 'none';
+  drag = null;
+  window.removeEventListener('mousemove', onDragMove);
+  window.removeEventListener('mouseup', onDragEnd);
+  window.removeEventListener('wheel', onDragWheel);
+}
+
+function canPlace(matrix, top, left){
+  for(let r=0;r<matrix.length;r++){
+    for(let c=0;c<matrix[0].length;c++){
+      if(matrix[r][c] === 'X'){
+        const rr = top+r, cc = left+c;
+        if(rr<0||cc<0||rr>=ROWS||cc>=COLS) return false;
+        if(occupied[rr][cc]) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function occupyCells(matrix, top, left){
+  const cells = [];
+  matrix.forEach((row,r)=>{
+    [...row].forEach((ch,c)=>{
+      if(ch==='X'){
+        occupied[top+r][left+c] = true;
+        cells.push([top+r, left+c]);
+      }
+    });
+  });
+  return cells;
+}
+
+function placeRoom(idx, matrix, top, left, polyRot){
+  const s = SHAPES[idx];
+  if(!canPlace(matrix, top, left)) return false;
+
+  const cells = occupyCells(matrix, top, left);
+
+  const id = ++placedIdSeq;
+  const roomEl = document.createElement('div');
+  roomEl.className = 'room';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'lbl';
+  lbl.textContent = (s.price/1000)+'k';
+
+  const room = { id, idx, matrix, polyRot, top, left, cells, price: s.price, el: roomEl, lbl };
+  placedRooms.push(room);
+  layoutRoomEl(room);
+
+  roomEl.addEventListener('mousedown', (e) => startMoveDrag(e, room));
+  plotEl.appendChild(roomEl);
+
+  updateTotals();
+  return true;
+}
+
+function layoutRoomEl(room){
+  const s = SHAPES[room.idx];
+  room.el.innerHTML = '';
+  room.el.style.left = (room.left*CELL)+'px';
+  room.el.style.top = (room.top*CELL)+'px';
+  room.el.style.width = (room.matrix[0].length*CELL)+'px';
+  room.el.style.height = (room.matrix.length*CELL)+'px';
+  room.el.style.display = '';
+  renderShape(room.el, s, room.matrix, CELL, room.polyRot);
+  room.el.appendChild(room.lbl);
+}
+
+function updateRoomPosition(room, matrix, top, left, polyRot){
+  room.matrix = matrix;
+  room.polyRot = polyRot;
+  room.top = top;
+  room.left = left;
+  room.cells = occupyCells(matrix, top, left);
+  layoutRoomEl(room);
+}
+
+function removeRoom(id){
+  const idx = placedRooms.findIndex(p => p.id === id);
+  if(idx === -1) return;
+  const room = placedRooms[idx];
+  room.cells.forEach(([r,c]) => occupied[r][c] = false);
+  room.el.remove();
+  placedRooms.splice(idx,1);
+  updateTotals();
+}
+
+function updateTotals(){
+  countEl.textContent = placedRooms.length;
+  const total = placedRooms.reduce((sum,r)=>sum+r.price,0);
+  totalEl.textContent = 'Total: ' + fmtGp(total);
+}
+
+document.getElementById('clearBtn').onclick = () => {
+  placedRooms.forEach(r => r.el.remove());
+  placedRooms = [];
+  occupied = Array.from({length:ROWS}, ()=>Array(COLS).fill(false));
+  updateTotals();
+};
+
+buildPalette();
+updateTotals();
+</script>
+</body>
+</html>
