@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Planejador de Casa</title>
 <style>
-  :root{ --cell: 9px; --ink:#27241f; --paper:#f6f1e7; --panel:rgba(255,255,255,.88); --line:#d9d0c1; --accent:#95623c; --accent-dark:#654027; }
+  :root{ --cell:9px; --plot-width:414px; --ink:#27241f; --paper:#f6f1e7; --panel:rgba(255,255,255,.88); --line:#d9d0c1; --accent:#95623c; --accent-dark:#654027; }
   *{ box-sizing:border-box; }
   body{
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -15,7 +15,8 @@
   }
   h1{ font-family:Georgia,serif; font-size:28px; margin:0 0 4px; letter-spacing:-.02em; }
   .sub{ font-size:12px; color:#6d665d; margin-bottom:16px; max-width:900px; }
-  .workspace{ display:grid; grid-template-columns:auto minmax(420px,1fr); gap:18px; align-items:stretch; }
+  .workspace{ display:grid; grid-template-columns:calc(var(--plot-width) + 30px) minmax(0,1fr); gap:18px; align-items:stretch; }
+  .planner-card,.viewer-card{ min-width:0; }
   .card{ background:var(--panel); border:1px solid rgba(95,76,53,.18); border-radius:14px; padding:14px; box-shadow:0 18px 50px rgba(59,48,35,.1); backdrop-filter:blur(8px); }
   .card-title{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
   .card-title h2{ font-family:Georgia,serif; font-size:17px; margin:0; }
@@ -67,7 +68,7 @@
   #floorTabs{ display:flex; gap:5px; flex-wrap:wrap; }
   .floor-tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
   .floor-actions{ margin-left:auto; display:flex; gap:5px; }
-  .palette-section-title{ grid-column:1/-1; display:flex; align-items:center; gap:10px; margin-top:4px; color:#6d665d; font:600 11px Georgia,serif; }
+  .palette-section-title{ grid-column:1/-1; display:flex; align-items:center; gap:10px; margin-top:2px; color:#6d665d; font:600 11px Georgia,serif; }
   .palette-section-title::after{ content:""; height:1px; flex:1; background:var(--line); }
   .shape-stairs{ padding:2px 6px; border-radius:10px; background:#8b5f3b; color:#fff; font-size:9px; }
   .room.generated-copy{ cursor:default; }
@@ -107,7 +108,7 @@
     width:100%;
     display: grid;
     grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-    gap: 8px;
+    gap: 6px;
     align-content: start;
   }
   .shape-item{
@@ -121,7 +122,7 @@
   }
   .shape-item:active{ cursor:grabbing; }
   .shape-item.disabled{ opacity:.42; cursor:not-allowed; filter:grayscale(.7); }
-  .shape-item.stair-option{ min-height:54px; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"name badge" "price price"; align-items:center; gap:2px 6px; padding:7px 8px; }
+  .shape-item.stair-option{ min-height:46px; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"name badge" "price price"; align-items:center; gap:1px 6px; padding:5px 7px; }
   .shape-item.stair-option .shape-name{ grid-area:name; text-align:left; }
   .shape-item.stair-option .shape-stairs{ grid-area:badge; }
   .shape-item.stair-option .shape-price,
@@ -132,7 +133,8 @@
   .shape-price{ font-size: 10px; color:#333; }
   .shape-est{ font-size: 9px; color:#a60; }
   .help{ font-size: 11px; color:#666; margin-top: 8px; line-height:1.4; grid-column: 1 / -1; }
-  .rooms-card{ width:100%; margin-bottom:18px; }
+  .rooms-card{ width:100%; margin-bottom:12px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; backdrop-filter:none; }
+  .rooms-card .card-title{ margin:0 0 6px; padding:0 2px; }
   .viewer-card{ min-height:520px; display:flex; flex-direction:column; }
   #threeWrap{ position:relative; flex:1; min-height:470px; overflow:hidden; border-radius:10px; background:linear-gradient(#87ceeb 0 64%,#63a848 64%); border:1px solid #8ab59c; }
   #threeCanvas{ display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
@@ -170,7 +172,7 @@
   <section class="card planner-card">
     <header class="planner-intro">
       <h1>Planejador de Casa</h1>
-      <div class="sub">Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Ao mover um cômodo, todos os cômodos diretamente acima acompanham o deslocamento. Para criar o terceiro piso, selecione o segundo piso e arraste o mesmo cômodo com escada sobre a cópia verde da escada anterior. A planta é salva automaticamente neste navegador.</div>
+      <div class="sub">Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Clique num cômodo para removê-lo.</div>
       <div class="top-bar">
         <div>Cômodos: <span id="count">0</span> / 25</div>
         <div id="total">Total: 0 gp</div>
@@ -459,6 +461,7 @@ function rotateDoors(doors, baseRows, baseCols, times){
 const plotEl = document.getElementById('plot');
 plotEl.style.width = (COLS*CELL)+'px';
 plotEl.style.height = (ROWS*CELL)+'px';
+document.documentElement.style.setProperty('--plot-width',(COLS*CELL)+'px');
 
 function addGuide(isVertical, fraction, isMid){
   const g = document.createElement('div');
@@ -760,13 +763,15 @@ function renderShape(container, shapeDef, matrix, cellPx, polyRot, openings){
 function buildPalette(){
   paletteEl.innerHTML = '';
   const addSection = (title,withStairs) => {
-    const heading=document.createElement('div');
-    heading.className='palette-section-title';
-    heading.textContent=title;
-    paletteEl.appendChild(heading);
+    if(title){
+      const heading=document.createElement('div');
+      heading.className='palette-section-title';
+      heading.textContent=title;
+      paletteEl.appendChild(heading);
+    }
     SHAPES.forEach((s,i)=>addPaletteItem(s,i,withStairs));
   };
-  addSection('Cômodos','');
+  addSection('',false);
   addSection('Cômodos com escada',true);
   updateStairPaletteAvailability();
 }
