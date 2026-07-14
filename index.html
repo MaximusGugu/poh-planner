@@ -24,11 +24,11 @@
   #plot{
     position: relative;
     background-image:
-      linear-gradient(to right, #ddd 1px, transparent 1px),
-      linear-gradient(to bottom, #ddd 1px, transparent 1px);
+      linear-gradient(to right, rgba(43,91,36,.34) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(43,91,36,.34) 1px, transparent 1px);
     background-size: var(--cell) var(--cell);
-    border: 2px solid #544a3f;
-    background-color: #fff;
+    border: 2px solid #315f2b;
+    background-color: #78b95a;
     overflow: hidden;
   }
   .room{ position:absolute; z-index:2; transition:opacity .18s ease, filter .18s ease; }
@@ -49,10 +49,20 @@
   }
   .room:hover .blk, .room:hover .poly{ filter: brightness(0.9); cursor:pointer; }
 
-  .top-bar{ display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin-bottom:12px; font-size:13px; }
+  .planner-intro{ padding-bottom:14px; border-bottom:1px solid var(--line); }
+  .planner-intro h1{ font-size:25px; }
+  .planner-intro .sub{ max-width:420px; margin-bottom:12px; line-height:1.45; }
+  .planner-floor{ padding-top:14px; }
+  .top-bar{ display:flex; flex-wrap:wrap; gap:7px; align-items:center; font-size:12px; }
   button{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 10px; font-size:12px; color:var(--ink); cursor:pointer; }
   button:hover{ border-color:var(--accent); color:var(--accent-dark); }
+  button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover{ background:var(--accent-dark); border-color:var(--accent-dark); }
   #total{ font-weight:bold; font-size: 15px; }
+  #appStatus{ flex-basis:100%; min-height:14px; color:#6d665d; font-size:11px; }
+  #plot.lot-move-ready{ cursor:move; box-shadow:0 0 0 3px rgba(149,98,60,.28); }
+  #plot.lot-moving .room{ cursor:grabbing; transition:none; }
   .floor-bar{ display:flex; align-items:center; gap:7px; margin-bottom:10px; }
   #floorTabs{ display:flex; gap:5px; flex-wrap:wrap; }
   .floor-tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
@@ -62,7 +72,9 @@
   .shape-stairs{ padding:2px 6px; border-radius:10px; background:#8b5f3b; color:#fff; font-size:9px; }
   .room.generated-copy{ cursor:default; }
   .room.generated-copy:hover .blk, .room.generated-copy:hover .poly{ cursor:default; filter:none; }
-  .room.has-stairs::after{ content:"\2191"; position:absolute; z-index:6; right:4px; top:4px; width:17px; height:17px; display:grid; place-items:center; border-radius:50%; background:#8b5f3b; color:#fff; font:bold 12px/1 sans-serif; pointer-events:none; box-shadow:0 1px 3px rgba(0,0,0,.25); }
+  .room.stair-continuation-target .blk, .room.stair-continuation-target .poly{ filter:brightness(1.12); box-shadow:inset 0 0 0 2px #2d9b58,0 0 10px rgba(45,155,88,.7); }
+  .room.has-stairs::after{ content:"\21bb"; position:absolute; z-index:6; left:50%; top:50%; width:22px; height:22px; display:grid; place-items:center; transform:translate(-50%,-50%); border:2px solid rgba(255,255,255,.82); border-radius:50%; background:#8b5f3b; color:#fff; font:bold 15px/1 sans-serif; pointer-events:none; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+  .room.has-stairs .lbl{ top:auto; bottom:2px; transform:translateX(-50%); }
   .opening-editor{ margin-top:10px; padding:9px; border:1px solid var(--line); border-radius:9px; background:rgba(246,241,231,.6); }
   .opening-editor-title{ display:flex; justify-content:space-between; gap:8px; margin-bottom:7px; font-size:11px; color:#6d665d; }
   #openingPalette{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
@@ -108,14 +120,21 @@
     background:rgba(255,255,255,.82);
   }
   .shape-item:active{ cursor:grabbing; }
+  .shape-item.disabled{ opacity:.42; cursor:not-allowed; filter:grayscale(.7); }
+  .shape-item.stair-option{ min-height:54px; display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"name badge" "price price"; align-items:center; gap:2px 6px; padding:7px 8px; }
+  .shape-item.stair-option .shape-name{ grid-area:name; text-align:left; }
+  .shape-item.stair-option .shape-stairs{ grid-area:badge; }
+  .shape-item.stair-option .shape-price,
+  .shape-item.stair-option .shape-est{ grid-area:price; text-align:left; }
   .shape-preview{ position: relative; width: 70px; height: 70px; }
   .shape-preview .blk{ position:absolute; box-sizing:border-box; border: 1px solid rgba(0,0,0,0.35); }
   .shape-name{ font-size: 11px; font-weight:bold; text-align:center; }
   .shape-price{ font-size: 10px; color:#333; }
   .shape-est{ font-size: 9px; color:#a60; }
   .help{ font-size: 11px; color:#666; margin-top: 8px; line-height:1.4; grid-column: 1 / -1; }
+  .rooms-card{ width:100%; margin-bottom:18px; }
   .viewer-card{ min-height:520px; display:flex; flex-direction:column; }
-  #threeWrap{ position:relative; flex:1; min-height:470px; overflow:hidden; border-radius:10px; background:linear-gradient(#d8e5e6 0 64%,#a9b694 64%); border:1px solid #c9c3b8; }
+  #threeWrap{ position:relative; flex:1; min-height:470px; overflow:hidden; border-radius:10px; background:linear-gradient(#87ceeb 0 64%,#63a848 64%); border:1px solid #8ab59c; }
   #threeCanvas{ display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
   #threeCanvas:active{ cursor:grabbing; }
   .viewer-hint{ position:absolute; left:10px; bottom:10px; padding:5px 8px; border-radius:6px; color:#fff; background:rgba(35,34,31,.68); font-size:10px; pointer-events:none; }
@@ -128,29 +147,50 @@
     position: fixed; pointer-events:none; z-index: 1000; opacity:0.75;
   }
   #ghost .blk, #ghost .poly{ position:absolute; box-sizing:border-box; }
+  .layout-dialog{ position:fixed; inset:0; z-index:2000; display:none; place-items:center; padding:20px; background:rgba(35,31,27,.55); }
+  .layout-dialog.open{ display:grid; }
+  .layout-dialog-panel{ width:min(560px,100%); padding:18px; border:1px solid rgba(95,76,53,.25); border-radius:14px; background:#fbf8f1; box-shadow:0 24px 80px rgba(0,0,0,.28); }
+  .layout-dialog-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:6px; }
+  .layout-dialog-head h2{ margin:0; font:20px Georgia,serif; }
+  .layout-dialog-panel p{ margin:0 0 10px; color:#6d665d; font-size:11px; line-height:1.45; }
+  #layoutCode{ width:100%; min-height:150px; resize:vertical; padding:10px; border:1px solid #d7cec0; border-radius:8px; background:#fff; color:#302b25; font:11px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; user-select:text; }
+  .layout-dialog-actions{ display:flex; justify-content:flex-end; gap:7px; margin-top:10px; }
+  #layoutDialogMessage{ min-height:16px; margin-top:7px; color:#766b60; font-size:11px; }
+  #layoutDialogMessage.error{ color:#a12b24; }
 </style>
 </head>
 <body>
 
-<h1>Planejador de Casa</h1>
-<div class="sub">Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Arraste um cômodo posicionado para movê-lo ou clique nele para removê-lo.</div>
-
-<div class="top-bar">
-  <div>Cômodos: <span id="count">0</span> / 25</div>
-  <div id="total">Total: 0 gp</div>
-  <button id="clearFloorBtn">Limpar piso</button>
-  <button id="clearBtn">Limpar tudo</button>
-</div>
+<section class="card rooms-card">
+  <div class="card-title"><h2>Cômodos</h2><span>Arraste para a planta</span></div>
+  <div id="palette"></div>
+</section>
 
 <div class="workspace">
   <section class="card planner-card">
-    <div class="card-title"><h2>Planta</h2><span id="floorLabel">Piso térreo</span></div>
-    <div class="floor-bar">
-      <div id="floorTabs"></div>
+    <header class="planner-intro">
+      <h1>Planejador de Casa</h1>
+      <div class="sub">Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Ao mover um cômodo, todos os cômodos diretamente acima acompanham o deslocamento. Para criar o terceiro piso, selecione o segundo piso e arraste o mesmo cômodo com escada sobre a cópia verde da escada anterior. A planta é salva automaticamente neste navegador.</div>
+      <div class="top-bar">
+        <div>Cômodos: <span id="count">0</span> / 25</div>
+        <div id="total">Total: 0 gp</div>
+        <button id="moveLotBtn" type="button" title="Mova toda a construção mantendo as posições relativas">Mover lote</button>
+        <button id="exportLayoutBtn" type="button">Compartilhar código</button>
+        <button id="importLayoutBtn" type="button">Importar código</button>
+        <button id="clearFloorBtn">Limpar piso</button>
+        <button id="clearBtn">Limpar tudo</button>
+        <span id="appStatus" role="status" aria-live="polite"></span>
+      </div>
+    </header>
+    <div class="planner-floor">
+      <div class="card-title"><h2>Planta baixa</h2><span id="floorLabel">Piso térreo</span></div>
+      <div class="floor-bar">
+        <div id="floorTabs"></div>
+      </div>
+      <div class="plot-wrap"><div id="plot"></div></div>
     </div>
-    <div class="plot-wrap"><div id="plot"></div></div>
     <div class="opening-editor">
-      <div class="opening-editor-title"><strong>Elementos da fachada</strong><span>Arraste para uma faixa vermelha</span></div>
+      <div class="opening-editor-title"><strong>Elementos da fachada</strong><span>Arraste para uma faixa vermelha do piso atual</span></div>
       <div id="openingPalette">
         <div class="opening-item" data-opening="wall"><span class="opening-icon"></span>Parede lisa</div>
         <div class="opening-item" data-opening="window"><span class="opening-icon window"></span>Janela</div>
@@ -199,12 +239,24 @@
     </div>
   </section>
 </div>
-<section class="card" style="margin-top:18px">
-  <div class="card-title"><h2>Cômodos</h2><span>Arraste para a planta</span></div>
-  <div id="palette"></div>
-</section>
 
 <div id="ghost" style="display:none;"></div>
+
+<div id="layoutDialog" class="layout-dialog" role="dialog" aria-modal="true" aria-labelledby="layoutDialogTitle">
+  <div class="layout-dialog-panel">
+    <div class="layout-dialog-head">
+      <h2 id="layoutDialogTitle">Compartilhar layout</h2>
+      <button id="closeLayoutDialogBtn" type="button" aria-label="Fechar">✕</button>
+    </div>
+    <p id="layoutDialogHelp"></p>
+    <textarea id="layoutCode" spellcheck="false" aria-label="Código do layout"></textarea>
+    <div id="layoutDialogMessage" role="status" aria-live="polite"></div>
+    <div class="layout-dialog-actions">
+      <button id="copyLayoutCodeBtn" type="button">Copiar código</button>
+      <button id="applyLayoutCodeBtn" class="primary" type="button">Importar layout</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -216,11 +268,12 @@ let MODEL_SLAB_HEIGHT = .08;
 let MODEL_WALL_HEIGHT = 1.45;
 let MODEL_LEVEL_HEIGHT = 1.45;
 let MODEL_ROOF_RISE = 1.1;
+const SPIRAL_OPENING_RADIUS = .68;
 
 const HOUSE_STYLES={
   wood_basic:{
     label:'Madeira básica',description:'Térreo meio pedra e meio madeira; pisos superiores inteiramente em madeira.',
-    wall:0x55371f,trim:0x2b1b10,foundation:0x74736d,slab:0x77726b,roof:0xb89058,pillar:0x49301d,glass:0x527381,door:0x7a4827,ridge:0x332015,finial:0x8d6a3d,chimneyTop:0x25211d,roofRoughness:.98,groundSplit:.5,halfTimber:true
+    wall:0x55371f,trim:0x2b1b10,foundation:0x74736d,slab:0x77726b,roof:0xb89058,pillar:0x49301d,glass:0x527381,door:0x7a4827,ridge:0x332015,finial:0x8d6a3d,chimneyTop:0x25211d,towerCap:0x745334,roofRoughness:.98,groundSplit:.5,halfTimber:true,thatch:true,tower:'flatWood'
   },
   stone_basic:{
     label:'Pedra básica',description:'Térreo de pedra clara; andares superiores em enxaimel claro.',
@@ -241,6 +294,8 @@ const HOUSE_STYLES={
 };
 let HOUSE_STYLE='stone_elegant';
 function currentHouseStyle(){return HOUSE_STYLES[HOUSE_STYLE]||HOUSE_STYLES.stone_elegant;}
+function hasThatchedRoof(){return !!currentHouseStyle().thatch;}
+function roofLineColor(){const style=currentHouseStyle();return style.thatch?style.roof:style.ridge;}
 
 // ---- Shape definitions ----
 // matrix: unit grid used for collision/placement (approximate raster footprint).
@@ -434,12 +489,157 @@ const floorTabsEl = document.getElementById('floorTabs');
 const floorLabelEl = document.getElementById('floorLabel');
 
 const MAX_ROOMS = 25;
+const MAX_FLOORS = 3;
 const createGrid = () => Array.from({length:ROWS}, ()=>Array(COLS).fill(false));
 let floors = [{ occupied:createGrid() }];
 let currentFloor = 0;
 let occupied = floors[0].occupied;
 let placedRooms = [];
 let placedIdSeq = 0;
+const STORAGE_KEY = 'poh-planner-layout-v1';
+const LAYOUT_CODE_PREFIX = 'POH1.';
+let isHydrating = false;
+let saveTimer = 0;
+let statusTimer = 0;
+
+function matrixForRotation(idx,polyRot){
+  let matrix=SHAPES[idx].matrix;
+  for(let i=0;i<polyRot;i++) matrix=rotateMatrix(matrix);
+  return matrix;
+}
+
+function serializeLayout(){
+  return {
+    v:1,
+    s:HOUSE_STYLE,
+    f:currentFloor,
+    r:placedRooms.map(room=>({
+      id:room.id,i:room.idx,r:room.polyRot,t:room.top,l:room.left,f:room.floor,
+      o:{...room.openings},w:room.withStairs,g:room.generated,ks:[...room.linkedIds]
+    }))
+  };
+}
+
+function normalizeLayoutData(payload){
+  if(!payload || payload.v!==1 || !Array.isArray(payload.r)) throw new Error('Código de layout inválido ou incompatível.');
+  if(payload.r.length>MAX_ROOMS) throw new Error(`O layout ultrapassa o limite de ${MAX_ROOMS} cômodos.`);
+  const ids=new Set();
+  const grids=[];
+  const rooms=payload.r.map(raw=>{
+    const id=Number(raw.id),idx=Number(raw.i),polyRot=Number(raw.r),top=Number(raw.t),left=Number(raw.l),floor=Number(raw.f);
+    if(!Number.isInteger(id)||id<1||ids.has(id)) throw new Error('O código contém identificadores de cômodo inválidos.');
+    if(!Number.isInteger(idx)||!SHAPES[idx]) throw new Error('O código usa um tipo de cômodo desconhecido.');
+    if(!Number.isInteger(polyRot)||polyRot<0||polyRot>3) throw new Error('O código contém uma rotação inválida.');
+    if(!Number.isInteger(floor)||floor<0||floor>=MAX_FLOORS) throw new Error(`O código ultrapassa o limite de ${MAX_FLOORS} pisos.`);
+    if(!Number.isInteger(top)||!Number.isInteger(left)) throw new Error('O código contém uma posição inválida.');
+    ids.add(id);
+    const matrix=matrixForRotation(idx,polyRot);
+    if(!grids[floor]) grids[floor]=new Set();
+    for(let row=0;row<matrix.length;row++) for(let col=0;col<matrix[0].length;col++) if(matrix[row][col]==='X'){
+      const rr=top+row,cc=left+col,key=`${rr},${cc}`;
+      if(rr<0||cc<0||rr>=ROWS||cc>=COLS) throw new Error('Há um cômodo fora dos limites do lote.');
+      if(grids[floor].has(key)) throw new Error('Há cômodos sobrepostos no código.');
+      grids[floor].add(key);
+    }
+    const openings={};
+    if(raw.o && typeof raw.o==='object') Object.entries(raw.o).forEach(([slot,type])=>{
+      if(!/^\d+$/.test(slot)) return;
+      if(type==='door') openings[slot]='arch';
+      else if(type==='window'||type==='arch') openings[slot]=type;
+    });
+    const rawLinkedIds=Array.isArray(raw.ks)?raw.ks:(raw.k==null?[]:[raw.k]);
+    const linkedSourceIds=[...new Set(rawLinkedIds.map(Number))];
+    return {sourceId:id,idx,polyRot,top,left,floor,openings,withStairs:!!raw.w,generated:!!raw.g,linkedSourceIds,matrix};
+  });
+  rooms.forEach(room=>{
+    if(room.linkedSourceIds.some(linkedId=>!Number.isInteger(linkedId)||linkedId===room.sourceId||!ids.has(linkedId))) throw new Error('O código contém uma ligação de escada inválida.');
+  });
+  const maxFloor=rooms.reduce((max,room)=>Math.max(max,room.floor),0);
+  const selectedFloor=Number.isInteger(Number(payload.f)) ? Math.max(0,Math.min(Number(payload.f),maxFloor)) : 0;
+  return {style:HOUSE_STYLES[payload.s]?payload.s:'stone_elegant',selectedFloor,maxFloor,rooms};
+}
+
+function saveLayoutNow(){
+  if(isHydrating) return;
+  try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(serializeLayout())); }
+  catch(error){ showStatus('Não foi possível salvar automaticamente neste navegador.'); }
+}
+
+function saveLayoutSoon(){
+  if(isHydrating) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveLayoutNow,80);
+}
+
+function applyLayoutData(payload){
+  const data=normalizeLayoutData(payload);
+  isHydrating=true;
+  try{
+    placedRooms.forEach(room=>room.el.remove());
+    placedRooms=[];
+    placedIdSeq=0;
+    floors=[{occupied:createGrid()}];
+    ensureFloor(data.maxFloor);
+    const roomBySourceId=new Map();
+    data.rooms.forEach(saved=>{
+      const room=createPlacedRoom(saved.idx,saved.matrix,saved.top,saved.left,saved.polyRot,saved.floor,{withStairs:saved.withStairs,generated:saved.generated,openings:saved.openings});
+      roomBySourceId.set(saved.sourceId,room);
+    });
+    data.rooms.forEach(saved=>{
+      const room=roomBySourceId.get(saved.sourceId);
+      room.linkedIds=saved.linkedSourceIds.map(sourceId=>roomBySourceId.get(sourceId).id);
+      layoutRoomEl(room);
+    });
+    HOUSE_STYLE=data.style;
+    currentFloor=data.selectedFloor;
+    occupied=floors[currentFloor].occupied;
+    document.getElementById('houseStyleSelect').value=HOUSE_STYLE;
+    renderCurrentFloor();
+    buildFloorTabs();
+    updateHouseStyleEditor();
+    updateTotals();
+  } finally {
+    isHydrating=false;
+  }
+  saveLayoutNow();
+}
+
+function restoreSavedLayout(){
+  try{
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if(!saved) return false;
+    applyLayoutData(JSON.parse(saved));
+    return true;
+  } catch(error){
+    showStatus('O layout salvo não pôde ser restaurado.');
+    return false;
+  }
+}
+
+function encodeLayoutCode(payload){
+  const bytes=new TextEncoder().encode(JSON.stringify(payload));
+  let binary='';
+  for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+  return LAYOUT_CODE_PREFIX+btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function decodeLayoutCode(code){
+  const cleaned=String(code||'').trim();
+  if(cleaned.startsWith('{')) return JSON.parse(cleaned);
+  if(!cleaned.startsWith(LAYOUT_CODE_PREFIX)) throw new Error('Este não parece ser um código do POH Planner.');
+  let base64=cleaned.slice(LAYOUT_CODE_PREFIX.length).replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');
+  base64+='='.repeat((4-base64.length%4)%4);
+  const binary=atob(base64);
+  const bytes=Uint8Array.from(binary,char=>char.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function showStatus(message){
+  const status=document.getElementById('appStatus');
+  status.textContent=message;
+  clearTimeout(statusTimer);
+  statusTimer=setTimeout(()=>{ if(status.textContent===message) status.textContent=''; },4000);
+}
 
 function ensureFloor(index){
   while(floors.length <= index) floors.push({ occupied:createGrid() });
@@ -466,6 +666,7 @@ function buildFloorTabs(){
     floorTabsEl.appendChild(btn);
   });
   floorLabelEl.textContent = floorName(currentFloor);
+  updateStairPaletteAvailability();
 }
 
 function switchFloor(index){
@@ -475,6 +676,7 @@ function switchFloor(index){
   renderCurrentFloor();
   buildFloorTabs();
   scheduleModelRebuild();
+  saveLayoutSoon();
 }
 
 function renderCurrentFloor(){
@@ -566,19 +768,32 @@ function buildPalette(){
   };
   addSection('Cômodos','');
   addSection('Cômodos com escada',true);
+  updateStairPaletteAvailability();
+}
+
+function updateStairPaletteAvailability(){
+  const disabled=currentFloor>=MAX_FLOORS-1;
+  paletteEl.querySelectorAll('.shape-item[data-stairs="true"]').forEach(item=>{
+    item.classList.toggle('disabled',disabled);
+    item.title=disabled?'O terceiro piso é o limite da construção.':'';
+  });
 }
 
 function addPaletteItem(s,i,withStairs){
     const item = document.createElement('div');
-    item.className = 'shape-item';
+    item.className = 'shape-item' + (withStairs ? ' stair-option' : '');
     item.dataset.idx = i;
+    item.dataset.stairs = withStairs ? 'true' : 'false';
 
-    const preview = document.createElement('div');
-    preview.className = 'shape-preview';
-    const m = s.matrix;
-    const maxDim = Math.max(m.length, m[0].length);
-    const pxCell = Math.floor(64 / maxDim);
-    renderShape(preview, s, m, pxCell, 0);
+    if(!withStairs){
+      const preview = document.createElement('div');
+      preview.className = 'shape-preview';
+      const m = s.matrix;
+      const maxDim = Math.max(m.length, m[0].length);
+      const pxCell = Math.floor(64 / maxDim);
+      renderShape(preview, s, m, pxCell, 0);
+      item.appendChild(preview);
+    }
 
     const name = document.createElement('div');
     name.className = 'shape-name';
@@ -588,7 +803,6 @@ function addPaletteItem(s,i,withStairs){
     price.className = s.estimated ? 'shape-est' : 'shape-price';
     price.textContent = (s.estimated? 'Est: ':'') + fmtGp(s.price) + (s.estimated? ' *':'');
 
-    item.appendChild(preview);
     item.appendChild(name);
     if(withStairs){
       const badge=document.createElement('div');
@@ -604,11 +818,80 @@ function addPaletteItem(s,i,withStairs){
 }
 
 // ---- Custom drag & drop with wheel-to-rotate ----
-// drag modes: 'new' (from palette) or 'move' (existing placed room)
+// drag modes: 'new', 'move', 'lot' or 'opening'
 let drag = null; // { mode, idx, matrix, polyRot, moveId, startX, startY, moved }
+let lotMoveMode = false;
+
+function setLotMoveMode(enabled){
+  lotMoveMode=!!enabled;
+  const button=document.getElementById('moveLotBtn');
+  button.classList.toggle('active',lotMoveMode);
+  button.setAttribute('aria-pressed',String(lotMoveMode));
+  button.textContent=lotMoveMode?'Cancelar movimento':'Mover lote';
+  plotEl.classList.toggle('lot-move-ready',lotMoveMode);
+  if(lotMoveMode) showStatus('Arraste qualquer cômodo para mover a construção inteira.');
+}
+
+function startLotDrag(e){
+  if(!placedRooms.length){
+    setLotMoveMode(false);
+    showStatus('Adicione ao menos um cômodo antes de mover o lote.');
+    return;
+  }
+  drag={
+    mode:'lot',startX:e.clientX,startY:e.clientY,moved:false,dx:0,dy:0,
+    originals:placedRooms.map(room=>({room,top:room.top,left:room.left}))
+  };
+  placedRooms.forEach(freeRoomCells);
+  plotEl.classList.add('lot-moving');
+  window.addEventListener('mousemove',onDragMove);
+  window.addEventListener('mouseup',onDragEnd);
+}
+
+function previewLotMove(dx,dy){
+  drag.dx=dx;
+  drag.dy=dy;
+  drag.originals.forEach(({room})=>{ room.el.style.transform=`translate(${dx*CELL}px,${dy*CELL}px)`; });
+}
+
+function canTranslateLot(dx,dy){
+  return drag.originals.every(({room,top,left})=>room.matrix.every((row,r)=>[...row].every((cell,c)=>{
+    if(cell!=='X') return true;
+    const rr=top+dy+r,cc=left+dx+c;
+    return rr>=0&&cc>=0&&rr<ROWS&&cc<COLS;
+  })));
+}
+
+function finishLotDrag(e){
+  const state=drag;
+  const dx=Math.round((e.clientX-state.startX)/CELL);
+  const dy=Math.round((e.clientY-state.startY)/CELL);
+  const valid=state.moved&&(dx!==0||dy!==0)&&canTranslateLot(dx,dy);
+  state.originals.forEach(({room})=>{ room.el.style.transform=''; });
+  state.originals.forEach(({room,top,left})=>updateRoomPosition(room,room.matrix,valid?top+dy:top,valid?left+dx:left,room.polyRot));
+  plotEl.classList.remove('lot-moving');
+  window.removeEventListener('mousemove',onDragMove);
+  window.removeEventListener('mouseup',onDragEnd);
+  drag=null;
+  if(valid){
+    setLotMoveMode(false);
+    showStatus('Construção movida e salva.');
+    saveLayoutSoon();
+  } else if(state.moved){
+    showStatus('O lote não pode ser movido para fora da área da planta.');
+  }
+}
 
 function startDrag(e, idx, withStairs=false){
   e.preventDefault();
+  if(withStairs && currentFloor>=MAX_FLOORS-1){
+    showStatus(`A construção já atingiu o limite de ${MAX_FLOORS} pisos.`);
+    return;
+  }
+  if(withStairs&&currentFloor>0){
+    setStairContinuationHighlights(true,idx);
+    showStatus('Solte este cômodo sobre a cópia verde da escada anterior.');
+  }
   drag = {
     mode: 'new',
     idx,
@@ -637,6 +920,7 @@ function startOpeningDrag(e,openingType){
 
 function startMoveDrag(e, room){
   e.preventDefault();
+  if(lotMoveMode){ startLotDrag(e); return; }
   if(room.generated) return;
   drag = {
     mode: 'move',
@@ -649,12 +933,11 @@ function startMoveDrag(e, room){
     moved: false
   };
 
-  // A pilha vinculada se move como uma peça única.
-  const linked=linkedRoom(room);
-  freeRoomCells(room);
-  freeRoomCells(linked);
-  room.el.style.display = 'none';
-  if(linked) linked.el.style.display='none';
+  // O cômodo e toda a coluna diretamente apoiada nele se movem juntos.
+  const stack=movementRoomStack(room);
+  drag.stack=stack.map(item=>({room:item,top:item.top,left:item.left,matrix:item.matrix,polyRot:item.polyRot}));
+  stack.forEach(freeRoomCells);
+  stack.forEach(item=>item.el.style.display='none');
 
   ghostEl.style.display = 'block';
   renderGhost();
@@ -663,6 +946,25 @@ function startMoveDrag(e, room){
   window.addEventListener('mousemove', onDragMove);
   window.addEventListener('mouseup', onDragEnd);
   window.addEventListener('wheel', onDragWheel, { passive:false });
+}
+
+function setStairContinuationHighlights(visible,idx){
+  placedRooms.forEach(room=>{
+    const eligible=visible&&room.floor===currentFloor&&canContinueStair(room,idx);
+    room.el.classList.toggle('stair-continuation-target',eligible);
+  });
+}
+
+function findStairContinuationTarget(idx,matrix,top,left){
+  if(currentFloor<=0||currentFloor>=MAX_FLOORS-1) return null;
+  const centerRow=top+matrix.length/2,centerCol=left+matrix[0].length/2;
+  let best=null;
+  placedRooms.forEach(room=>{
+    if(!canContinueStair(room,idx)) return;
+    const distance=Math.hypot(centerRow-(room.top+room.matrix.length/2),centerCol-(room.left+room.matrix[0].length/2));
+    if(distance<=DOOR_SNAP_DISTANCE&&(!best||distance<best.distance)) best={room,distance};
+  });
+  return best&&best.room;
 }
 
 function renderGhost(){
@@ -698,6 +1000,12 @@ function moveGhost(clientX, clientY){
 
 function onDragMove(e){
   if(!drag) return;
+  if(drag.mode==='lot'){
+    const dx=Math.round((e.clientX-drag.startX)/CELL),dy=Math.round((e.clientY-drag.startY)/CELL);
+    if(Math.abs(e.clientX-drag.startX)>3||Math.abs(e.clientY-drag.startY)>3) drag.moved=true;
+    previewLotMove(dx,dy);
+    return;
+  }
   if(drag.mode === 'move'){
     const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
     if(Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
@@ -707,7 +1015,12 @@ function onDragMove(e){
 
 function onDragWheel(e){
   if(!drag) return;
-  if(drag.mode === 'opening') return;
+  if(drag.mode === 'opening'||drag.mode==='lot') return;
+  if(drag.mode==='move'&&drag.stack&&drag.stack.length>1){
+    e.preventDefault();
+    showStatus('Uma coluna com andares superiores pode ser deslocada, mas não girada em conjunto.');
+    return;
+  }
   e.preventDefault();
   drag.matrix = rotateMatrix(drag.matrix);
   drag.polyRot = (drag.polyRot + 1) % 4;
@@ -718,6 +1031,10 @@ function onDragWheel(e){
 
 function onDragEnd(e){
   if(!drag) return;
+  if(drag.mode==='lot'){
+    finishLotDrag(e);
+    return;
+  }
   if(drag.mode === 'opening'){
     const target = findNearestOpeningSlot(e.clientX,e.clientY);
     if(target){
@@ -725,6 +1042,7 @@ function onDragEnd(e){
       else target.room.openings[target.slotIndex] = drag.openingType;
       layoutRoomEl(target.room);
       scheduleModelRebuild();
+      saveLayoutSoon();
     }
     ghostEl.style.display = 'none';
     drag = null;
@@ -740,28 +1058,47 @@ function onDragEnd(e){
   const overPlot = gx + w > rect.left && gx < rect.right && gy + h > rect.top && gy < rect.bottom;
   let left = Math.round((gx - rect.left) / CELL);
   let top = Math.round((gy - rect.top) / CELL);
+  let continuationRoom=null;
 
   if(overPlot){
-    const snapped = findDoorSnap(drag.idx, drag.matrix, drag.polyRot, top, left, drag.moveId);
-    if(snapped){ top = snapped.top; left = snapped.left; }
+    if(drag.mode==='new'&&drag.withStairs&&currentFloor>0){
+      continuationRoom=findStairContinuationTarget(drag.idx,drag.matrix,top,left);
+      if(continuationRoom){
+        top=continuationRoom.top;
+        left=continuationRoom.left;
+        drag.matrix=continuationRoom.matrix;
+        drag.polyRot=continuationRoom.polyRot;
+      }
+    }else{
+      const snapped = findDoorSnap(drag.idx, drag.matrix, drag.polyRot, top, left, drag.moveId);
+      if(snapped){ top = snapped.top; left = snapped.left; }
+    }
   }
 
   if(drag.mode === 'new'){
-    if(overPlot) placeRoom(drag.idx, drag.matrix, top, left, drag.polyRot, drag.withStairs);
+    if(overPlot && !placeRoom(drag.idx, drag.matrix, top, left, drag.polyRot, drag.withStairs,continuationRoom)){
+      const message=drag.withStairs&&currentFloor>0
+        ?'A escada deve ser colocada sobre a cópia verde da escada do piso anterior.'
+        :drag.withStairs?'Não há espaço livre neste piso e no piso acima para a escada.':'Não é possível posicionar o cômodo nesse local.';
+      showStatus(message);
+    }
   } else {
     // move mode
     const room = placedRooms.find(p => p.id === drag.moveId);
     if(!drag.moved){
       // treated as a click -> remove the room
+      restoreRoomStack(room,drag.stack);
       removeRoom(drag.moveId);
-    } else if(overPlot && canPlaceRoomStack(room, drag.matrix, top, left)){
-      updateRoomStackPosition(room, drag.matrix, top, left, drag.polyRot);
+    } else if(overPlot && canPlaceRoomStack(room, drag.matrix, top, left,drag.stack)){
+      updateRoomStackPosition(room, drag.matrix, top, left, drag.polyRot,drag.stack);
+      saveLayoutSoon();
     } else {
       // invalid drop: restore to original spot/orientation
-      restoreRoomStack(room);
+      restoreRoomStack(room,drag.stack);
     }
   }
 
+  setStairContinuationHighlights(false);
   ghostEl.style.display = 'none';
   drag = null;
   window.removeEventListener('mousemove', onDragMove);
@@ -854,8 +1191,9 @@ function overlapsOccupiedBelow(matrix,top,left,floorIndex){
 
 function canPlaceNewRoom(matrix,top,left,withStairs=false){
   if(withStairs){
-    if(currentFloor!==0 || !canPlaceOnFloor(matrix,top,left,0)) return false;
-    return !floors[1] || canPlaceOnFloor(matrix,top,left,1);
+    if(currentFloor!==0 || !canPlaceOnFloor(matrix,top,left,currentFloor)) return false;
+    const upperFloor=currentFloor+1;
+    return !floors[upperFloor] || canPlaceOnFloor(matrix,top,left,upperFloor);
   }
   return canPlaceOnFloor(matrix,top,left,currentFloor)
     && !overlapsOccupiedBelow(matrix,top,left,currentFloor);
@@ -875,6 +1213,11 @@ function occupyCells(matrix, top, left, floorIndex=currentFloor){
   return cells;
 }
 
+function defaultOpeningsForRoom(idx,floor){
+  const type=floor===0?'arch':'window';
+  return Object.fromEntries((SHAPES[idx].doors||[]).map((door,index)=>[door.slotIndex??index,type]));
+}
+
 function createPlacedRoom(idx,matrix,top,left,polyRot,floor,options={}){
   const s = SHAPES[idx];
   const id = ++placedIdSeq;
@@ -886,30 +1229,61 @@ function createPlacedRoom(idx,matrix,top,left,polyRot,floor,options={}){
   lbl.textContent = options.generated ? 'c\u00f3pia' : (s.price/1000)+'k';
 
   const cells = occupyCells(matrix,top,left,floor);
-  const room = { id, idx, matrix, polyRot, top, left, cells, floor, openings:{}, price:options.generated ? 0 : s.price, withStairs:!!options.withStairs, generated:!!options.generated, linkedId:null, el:roomEl, lbl };
+  const openings=options.openings===undefined?defaultOpeningsForRoom(idx,floor):{...options.openings};
+  const room = { id, idx, matrix, polyRot, top, left, cells, floor, openings, price:options.generated ? 0 : s.price, withStairs:!!options.withStairs, generated:!!options.generated, linkedIds:[], el:roomEl, lbl };
   placedRooms.push(room);
   layoutRoomEl(room);
 
-  if(!room.generated) roomEl.addEventListener('mousedown', (e) => startMoveDrag(e, room));
+  roomEl.addEventListener('mousedown', (e) => startMoveDrag(e, room));
   plotEl.appendChild(roomEl);
 
   return room;
 }
 
-function placeRoom(idx, matrix, top, left, polyRot, withStairs=false){
+function linkRooms(first,second){
+  if(!first.linkedIds.includes(second.id)) first.linkedIds.push(second.id);
+  if(!second.linkedIds.includes(first.id)) second.linkedIds.push(first.id);
+}
+
+function canContinueStair(room,idx){
+  if(!room||!room.generated||room.floor!==currentFloor||room.floor<=0||room.floor>=MAX_FLOORS-1||room.idx!==idx) return false;
+  const hasLowerStair=linkedRoomStack(room).some(linked=>linked.floor===room.floor-1&&linked.withStairs);
+  if(!hasLowerStair||placedRooms.length+1>MAX_ROOMS) return false;
+  const upperFloor=room.floor+1;
+  return !floors[upperFloor]||canPlaceOnFloor(room.matrix,room.top,room.left,upperFloor);
+}
+
+function continueStair(room){
+  if(!canContinueStair(room,room.idx)) return false;
+  const shape=SHAPES[room.idx];
+  const upperFloor=room.floor+1;
+  ensureFloor(upperFloor);
+  room.generated=false;
+  room.withStairs=true;
+  room.price=shape.price;
+  room.lbl.textContent=(shape.price/1000)+'k';
+  const upper=createPlacedRoom(room.idx,room.matrix,room.top,room.left,room.polyRot,upperFloor,{generated:true});
+  linkRooms(room,upper);
+  layoutRoomEl(room);
+  buildFloorTabs();
+  updateTotals();
+  showStatus('Escada continuada até o terceiro piso.');
+  return true;
+}
+
+function placeRoom(idx, matrix, top, left, polyRot, withStairs=false,continuationRoom=null){
+  if(continuationRoom) return continueStair(continuationRoom);
   const needed=withStairs ? 2 : 1;
   if(placedRooms.length + needed > MAX_ROOMS) return false;
   if(!canPlaceNewRoom(matrix,top,left,withStairs)) return false;
-  if(withStairs){
-    ensureFloor(1);
-  }
+  const placementFloor=currentFloor;
+  const upperFloor=placementFloor+1;
+  if(withStairs) ensureFloor(upperFloor);
 
-  const placementFloor=withStairs ? 0 : currentFloor;
   const lower=createPlacedRoom(idx,matrix,top,left,polyRot,placementFloor,{withStairs});
   if(withStairs){
-    const upper=createPlacedRoom(idx,matrix,top,left,polyRot,1,{generated:true});
-    lower.linkedId=upper.id;
-    upper.linkedId=lower.id;
+    const upper=createPlacedRoom(idx,matrix,top,left,polyRot,upperFloor,{generated:true});
+    linkRooms(lower,upper);
     buildFloorTabs();
   }
 
@@ -947,39 +1321,82 @@ function updateRoomPosition(room, matrix, top, left, polyRot){
   scheduleModelRebuild();
 }
 
-function linkedRoom(room){ return room && room.linkedId ? placedRooms.find(item=>item.id===room.linkedId) : null; }
+function linkedRoomStack(room){
+  if(!room) return [];
+  const result=[],seen=new Set(),queue=[room];
+  while(queue.length){
+    const current=queue.shift();
+    if(!current||seen.has(current.id)) continue;
+    seen.add(current.id);
+    result.push(current);
+    current.linkedIds.forEach(id=>queue.push(placedRooms.find(item=>item.id===id)));
+  }
+  return result;
+}
+
+function roomsOverlapFootprint(first,second){
+  if(!first||!second) return false;
+  const firstCells=new Set(first.cells.map(([row,col])=>`${row},${col}`));
+  return second.cells.some(([row,col])=>firstCells.has(`${row},${col}`));
+}
+
+function movementRoomStack(room){
+  if(!room) return [];
+  const result=[],seen=new Set(),queue=[room];
+  while(queue.length){
+    const current=queue.shift();
+    if(!current||seen.has(current.id)) continue;
+    seen.add(current.id);
+    result.push(current);
+    current.linkedIds.forEach(id=>queue.push(placedRooms.find(item=>item.id===id)));
+    placedRooms
+      .filter(candidate=>candidate.floor===current.floor+1&&roomsOverlapFootprint(current,candidate))
+      .forEach(candidate=>queue.push(candidate));
+  }
+  return result;
+}
+
+function movementStackSnapshots(room,snapshots){
+  return snapshots&&snapshots.length?snapshots:movementRoomStack(room).map(item=>({room:item,top:item.top,left:item.left,matrix:item.matrix,polyRot:item.polyRot}));
+}
 
 function freeRoomCells(room){
   if(!room || !floors[room.floor]) return;
   room.cells.forEach(([r,c])=>floors[room.floor].occupied[r][c]=false);
 }
 
-function canPlaceRoomStack(room,matrix,top,left){
-  if(!room || !canPlaceOnFloor(matrix,top,left,room.floor)) return false;
-  if(!room.generated && !room.linkedId && overlapsOccupiedBelow(matrix,top,left,room.floor)) return false;
-  const linked=linkedRoom(room);
-  return !linked || canPlaceOnFloor(matrix,top,left,linked.floor);
+function canPlaceRoomStack(room,matrix,top,left,snapshots){
+  if(!room) return false;
+  const stack=movementStackSnapshots(room,snapshots);
+  const base=stack.find(item=>item.room.id===room.id);
+  const topDelta=top-base.top,leftDelta=left-base.left;
+  return stack.every(item=>{
+    const itemMatrix=item.room.id===room.id?matrix:item.matrix;
+    return canPlaceOnFloor(itemMatrix,item.top+topDelta,item.left+leftDelta,item.room.floor);
+  });
 }
 
-function updateRoomStackPosition(room,matrix,top,left,polyRot){
-  updateRoomPosition(room,matrix,top,left,polyRot);
-  const linked=linkedRoom(room);
-  if(linked) updateRoomPosition(linked,matrix,top,left,polyRot);
+function updateRoomStackPosition(room,matrix,top,left,polyRot,snapshots){
+  const stack=movementStackSnapshots(room,snapshots);
+  const base=stack.find(item=>item.room.id===room.id);
+  const topDelta=top-base.top,leftDelta=left-base.left;
+  stack.forEach(item=>{
+    const selected=item.room.id===room.id;
+    updateRoomPosition(item.room,selected?matrix:item.matrix,item.top+topDelta,item.left+leftDelta,selected?polyRot:item.polyRot);
+  });
 }
 
-function restoreRoomStack(room){
-  updateRoomPosition(room,room.matrix,room.top,room.left,room.polyRot);
-  const linked=linkedRoom(room);
-  if(linked) updateRoomPosition(linked,linked.matrix,linked.top,linked.left,linked.polyRot);
+function restoreRoomStack(room,snapshots){
+  movementStackSnapshots(room,snapshots).forEach(item=>updateRoomPosition(item.room,item.matrix,item.top,item.left,item.polyRot));
 }
 
 function removeRoom(id){
   const room=placedRooms.find(p=>p.id===id);
   if(!room) return;
-  const ids=new Set([room.id]);
-  if(room.linkedId) ids.add(room.linkedId);
+  const ids=new Set(linkedRoomStack(room).filter(item=>item.floor>=room.floor).map(item=>item.id));
   placedRooms.filter(item=>ids.has(item.id)).forEach(item=>{ freeRoomCells(item); item.el.remove(); });
   placedRooms=placedRooms.filter(item=>!ids.has(item.id));
+  placedRooms.forEach(item=>{ item.linkedIds=item.linkedIds.filter(linkedId=>!ids.has(linkedId)); });
   pruneEmptyUpperFloors();
   renderCurrentFloor();
   buildFloorTabs();
@@ -991,9 +1408,11 @@ function updateTotals(){
   const total = placedRooms.reduce((sum,r)=>sum+r.price,0);
   totalEl.textContent = 'Total: ' + fmtGp(total);
   scheduleModelRebuild();
+  saveLayoutSoon();
 }
 
 document.getElementById('clearBtn').onclick = () => {
+  setLotMoveMode(false);
   placedRooms.forEach(r => r.el.remove());
   placedRooms = [];
   floors = [{ occupied:createGrid() }];
@@ -1004,9 +1423,12 @@ document.getElementById('clearBtn').onclick = () => {
 };
 
 document.getElementById('clearFloorBtn').onclick = () => {
+  setLotMoveMode(false);
   const ids=placedRooms.filter(r=>r.floor===currentFloor).map(r=>r.id);
   ids.forEach(id=>{ if(placedRooms.some(r=>r.id===id)) removeRoom(id); });
 };
+
+document.getElementById('moveLotBtn').addEventListener('click',()=>setLotMoveMode(!lotMoveMode));
 
 // ---- Three.js isometric model ----
 const threeWrapEl = document.getElementById('threeWrap');
@@ -1018,6 +1440,9 @@ let orbitPitch = Math.atan(1 / Math.sqrt(2));
 let orbitDistance = 62;
 let viewSize = 38;
 let orbitTarget = { x:0, y:2, z:0 };
+const SKY_COLOR = 0x87ceeb;
+const GRASS_COLOR = 0x132402;
+const HOUSE_FLOOR_COLOR = 0x241D16;
 
 function scheduleModelRebuild(){
   if(!renderer || modelRebuildFrame) return;
@@ -1033,8 +1458,8 @@ function initThree(){
     return;
   }
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xdbe6e6);
-  scene.fog = new THREE.Fog(0xdbe6e6, 65, 115);
+  scene.background = new THREE.Color(SKY_COLOR);
+  scene.fog = new THREE.Fog(SKY_COLOR, 85, 155);
   camera = new THREE.OrthographicCamera(-20,20,20,-20,.1,180);
   renderer = new THREE.WebGLRenderer({ canvas:threeCanvasEl, antialias:true, alpha:false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -1042,7 +1467,7 @@ function initThree(){
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  scene.add(new THREE.HemisphereLight(0xf4f0e5, 0x627252, 1.4));
+  scene.add(new THREE.HemisphereLight(0xcceeff, 0x4c7338, 1.4));
   const sun = new THREE.DirectionalLight(0xfff4d7, 1.15);
   sun.position.set(-22, 35, 18);
   sun.castShadow = true;
@@ -1051,8 +1476,8 @@ function initThree(){
   sun.shadow.camera.right = sun.shadow.camera.top = 38;
   scene.add(sun);
 
-  const groundMat = new THREE.MeshStandardMaterial({ color:0x8fa276, roughness:1 });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(90,90), groundMat);
+  const groundMat = new THREE.MeshStandardMaterial({ color:GRASS_COLOR, roughness:1 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(220,220), groundMat);
   ground.rotation.x = -Math.PI/2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -1082,7 +1507,7 @@ function createTileGrid(cols,rows,tileSize){
   }
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-  const material=new THREE.LineBasicMaterial({color:0x879677,transparent:true,opacity:.28});
+  const material=new THREE.LineBasicMaterial({color:0x315f2b,transparent:true,opacity:.34});
   return new THREE.LineSegments(geometry,material);
 }
 
@@ -1241,7 +1666,7 @@ function addSmallSquareRoof(group,room,baseY,roofMaterial,gableMaterial,trimMate
   addBeamBetween(roof,N,S,.095,trimMaterial);
 
   // Tile courses follow each of the eight roof planes.
-  const seamMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().ridge,roughness:.82});
+  const seamMaterial=new THREE.MeshStandardMaterial({color:roofLineColor(),roughness:.9});
   triangles.forEach(([edgeA,center,edgeB])=>{
     for(const t of [.2,.4,.6,.8]){
       const a=[edgeA[0]+(center[0]-edgeA[0])*t,edgeA[1]+(center[1]-edgeA[1])*t+.018,edgeA[2]+(center[2]-edgeA[2])*t];
@@ -1250,12 +1675,14 @@ function addSmallSquareRoof(group,room,baseY,roofMaterial,gableMaterial,trimMate
     }
   });
 
-  const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
-  for(const axis of ['x','z']) for(let p=-half*.82;p<=half*.82;p+=.28){
-    if(Math.abs(p)<.08 && axis==='z') continue;
-    const finial=new THREE.Mesh(new THREE.CylinderGeometry(.011,.025,.095,6),finialMaterial);
-    finial.position.set(axis==='x'?p:0,baseY+rise+.1,axis==='z'?p:0);
-    finial.castShadow=true; roof.add(finial);
+  if(!hasThatchedRoof()){
+    const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
+    for(const axis of ['x','z']) for(let p=-half*.82;p<=half*.82;p+=.28){
+      if(Math.abs(p)<.08 && axis==='z') continue;
+      const finial=new THREE.Mesh(new THREE.CylinderGeometry(.011,.025,.095,6),finialMaterial);
+      finial.position.set(axis==='x'?p:0,baseY+rise+.1,axis==='z'?p:0);
+      finial.castShadow=true; roof.add(finial);
+    }
   }
 }
 
@@ -1270,6 +1697,7 @@ function addSquareLargeRoof(group,room,baseY,roofMaterial,gableMaterial,trimMate
   roof.rotation.y=-(room.polyRot%4)*Math.PI/2;
   group.add(roof);
   const darkTrim=new THREE.MeshStandardMaterial({color:currentHouseStyle().ridge,roughness:.82,metalness:.03});
+  const roofAccent=hasThatchedRoof()?roofMaterial:darkTrim;
 
   // Three repeated cross-gables on every side form the lower crown visible
   // between the four corner towers.
@@ -1304,10 +1732,10 @@ function addSquareLargeRoof(group,room,baseY,roofMaterial,gableMaterial,trimMate
   back.rotation.x=-mainAngle;
   addGableTriangle(roof,-upperW/2+.03,upperRoofBase,0,upperD,mainRise,'x',gableMaterial);
   addGableTriangle(roof,upperW/2-.03,upperRoofBase,0,upperD,mainRise,'x',gableMaterial);
-  addBeamBetween(roof,[-upperW/2-.16,upperRoofBase+mainRise+.04,0],[upperW/2+.16,upperRoofBase+mainRise+.04,0],.12,darkTrim);
+  addBeamBetween(roof,[-upperW/2-.16,upperRoofBase+mainRise+.04,0],[upperW/2+.16,upperRoofBase+mainRise+.04,0],.12,roofAccent);
   for(const x of [-upperW/2-.04,upperW/2+.04]){
-    addBeamBetween(roof,[x,upperRoofBase,-upperD/2],[x,upperRoofBase+mainRise,0],.075,darkTrim);
-    addBeamBetween(roof,[x,upperRoofBase+mainRise,0],[x,upperRoofBase,upperD/2],.075,darkTrim);
+    addBeamBetween(roof,[x,upperRoofBase,-upperD/2],[x,upperRoofBase+mainRise,0],.075,roofAccent);
+    addBeamBetween(roof,[x,upperRoofBase+mainRise,0],[x,upperRoofBase,upperD/2],.075,roofAccent);
     addBeamBetween(roof,[x,upperRoofBase,0],[x,upperRoofBase+mainRise,0],.07,darkTrim);
   }
   for(const side of [-1,1]){
@@ -1322,7 +1750,7 @@ function addSquareLargeRoof(group,room,baseY,roofMaterial,gableMaterial,trimMate
   addLargeDormer(roof,-1.25,1,upperD,upperRoofBase,mainRise,roofMaterial,gableMaterial,darkTrim);
   addLargeDormer(roof,1.25,1,upperD,upperRoofBase,mainRise,roofMaterial,gableMaterial,darkTrim);
 
-  // Four masonry corner towers and their steep pyramidal spires.
+  // Four corner towers; each style chooses its own roof cap.
   const towerOffset=outerHalf-.66,towerSize=1.18,towerH=MODEL_WALL_HEIGHT*.67;
   for(const tx of [-towerOffset,towerOffset]) for(const tz of [-towerOffset,towerOffset]){
     const towerTop=baseY+towerH;
@@ -1331,14 +1759,17 @@ function addSquareLargeRoof(group,room,baseY,roofMaterial,gableMaterial,trimMate
     addBox(roof,towerSize+.2,.11,towerSize+.2,tx,towerTop-.03,tz,trimMaterial);
     addTowerWindow(roof,tx,tz+Math.sign(tz)*(towerSize/2+.012),towerTop-.44,'z',darkTrim);
     addTowerWindow(roof,tx+Math.sign(tx)*(towerSize/2+.012),tz,towerTop-.44,'x',darkTrim);
-    if(currentHouseStyle().tower==='fremennik') addFremennikTowerCap(roof,tx,tz,towerTop,towerSize+.2,roofMaterial,darkTrim);
+    if(currentHouseStyle().tower==='flatWood') addFlatWoodTowerCap(roof,tx,tz,towerTop,towerSize+.2);
+    else if(currentHouseStyle().tower==='fremennik') addFremennikTowerCap(roof,tx,tz,towerTop,towerSize+.2,roofMaterial,darkTrim);
     else addPyramidSpire(roof,tx,tz,towerTop,towerSize+.18,MODEL_ROOF_RISE*1.72,roofMaterial,darkTrim);
   }
 
-  const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
-  for(let x=-upperW*.43;x<=upperW*.43;x+=.32){
-    const finial=new THREE.Mesh(new THREE.CylinderGeometry(.012,.027,.11,6),finialMaterial);
-    finial.position.set(x,upperRoofBase+mainRise+.14,0);finial.castShadow=true;roof.add(finial);
+  if(!hasThatchedRoof()){
+    const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
+    for(let x=-upperW*.43;x<=upperW*.43;x+=.32){
+      const finial=new THREE.Mesh(new THREE.CylinderGeometry(.012,.027,.11,6),finialMaterial);
+      finial.position.set(x,upperRoofBase+mainRise+.14,0);finial.castShadow=true;roof.add(finial);
+    }
   }
 }
 
@@ -1393,6 +1824,14 @@ function addPyramidSpire(group,cx,cz,baseY,size,rise,roofMaterial,trimMaterial){
   addBeamBetween(group,[cx+h,baseY,cz-h],[cx+h,baseY,cz+h],.08,trimMaterial);
   addBeamBetween(group,[cx+h,baseY,cz+h],[cx-h,baseY,cz+h],.08,trimMaterial);
   addBeamBetween(group,[cx-h,baseY,cz+h],[cx-h,baseY,cz-h],.08,trimMaterial);
+}
+
+function addFlatWoodTowerCap(group,cx,cz,baseY,size){
+  const style=currentHouseStyle();
+  const woodMaterial=new THREE.MeshStandardMaterial({color:style.towerCap||style.trim,roughness:.92,metalness:0});
+  // Acabamento horizontal de madeira, com beiral reto e sem cumeeira.
+  addBox(group,size+.38,.15,size+.38,cx,baseY+.075,cz,woodMaterial);
+  addBox(group,size+.18,.07,size+.18,cx,baseY-.025,cz,woodMaterial);
 }
 
 function addFremennikTowerCap(group,cx,cz,baseY,size,roofMaterial,trimMaterial){
@@ -1479,7 +1918,7 @@ function addHallwayRoof(group,room,longTiles,baseY,roofMaterial,gableMaterial,tr
   });
   const seamGeometry=new THREE.BufferGeometry();
   seamGeometry.setAttribute('position',new THREE.Float32BufferAttribute(seamVertices,3));
-  roof.add(new THREE.LineSegments(seamGeometry,new THREE.LineBasicMaterial({color:currentHouseStyle().ridge,transparent:true,opacity:.55})));
+  roof.add(new THREE.LineSegments(seamGeometry,new THREE.LineBasicMaterial({color:roofLineColor(),transparent:true,opacity:hasThatchedRoof()?.22:.55})));
 
   // Gables at both ends and at every four-tile division.
   addGableTriangle(roof,0,baseY,-longHalf+.035,shortSize,rise,'z',gableMaterial);
@@ -1511,15 +1950,17 @@ function addHallwayRoof(group,room,longTiles,baseY,roofMaterial,gableMaterial,tr
     if(lastEnd<longHalf) addBeamBetween(roof,[x,baseY,lastEnd],[x,baseY,longHalf],beam,trimMaterial);
   }
 
-  const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
-  const addFinial=(x,z)=>{
-    const finial=new THREE.Mesh(new THREE.CylinderGeometry(.011,.025,.095,6),finialMaterial);
-    finial.position.set(x,ridgeY+.1,z); finial.castShadow=true; roof.add(finial);
-  };
-  for(let z=-longHalf*.93;z<=longHalf*.93;z+=.32) addFinial(0,z);
-  crossCenters.forEach(z=>{
-    for(let x=-shortHalf*.8;x<=shortHalf*.8;x+=.3) if(Math.abs(x)>.08) addFinial(x,z);
-  });
+  if(!hasThatchedRoof()){
+    const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
+    const addFinial=(x,z)=>{
+      const finial=new THREE.Mesh(new THREE.CylinderGeometry(.011,.025,.095,6),finialMaterial);
+      finial.position.set(x,ridgeY+.1,z); finial.castShadow=true; roof.add(finial);
+    };
+    for(let z=-longHalf*.93;z<=longHalf*.93;z+=.32) addFinial(0,z);
+    crossCenters.forEach(z=>{
+      for(let x=-shortHalf*.8;x<=shortHalf*.8;x+=.3) if(Math.abs(x)>.08) addFinial(x,z);
+    });
+  }
 }
 
 function addOrthogonalShapeRoof(group,room,baseY,roofMaterial,gableMaterial,trimMaterial,config){
@@ -1576,16 +2017,18 @@ function addOrthogonalShapeRoof(group,room,baseY,roofMaterial,gableMaterial,trim
       addBeamBetween(roof,[gable.coord,baseY+rise,gable.center],[gable.coord,baseY,gable.center+half],.085,trimMaterial);
     }
   });
-  const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
-  config.ridges.forEach(([a,b])=>{
-    const length=Math.hypot(b[0]-a[0],b[1]-a[1]);
-    const count=Math.max(1,Math.floor(length/.32));
-    for(let i=1;i<count;i++){
-      const t=i/count;
-      const finial=new THREE.Mesh(new THREE.CylinderGeometry(.011,.025,.095,6),finialMaterial);
-      finial.position.set(a[0]+(b[0]-a[0])*t,baseY+rise+.1,a[1]+(b[1]-a[1])*t);finial.castShadow=true;roof.add(finial);
-    }
-  });
+  if(!hasThatchedRoof()){
+    const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
+    config.ridges.forEach(([a,b])=>{
+      const length=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      const count=Math.max(1,Math.floor(length/.32));
+      for(let i=1;i<count;i++){
+        const t=i/count;
+        const finial=new THREE.Mesh(new THREE.CylinderGeometry(.011,.025,.095,6),finialMaterial);
+        finial.position.set(a[0]+(b[0]-a[0])*t,baseY+rise+.1,a[1]+(b[1]-a[1])*t);finial.castShadow=true;roof.add(finial);
+      }
+    });
+  }
   if(config.chimney)addRoofChimney(roof,config.chimney[0],config.chimney[1],baseY+rise,gableMaterial,trimMaterial);
 }
 
@@ -1729,6 +2172,7 @@ function addRoofOutline(group,points,material){
 }
 
 function addRidgeFinials(group,start,end,material){
+  if(hasThatchedRoof()) return;
   const length=Math.hypot(end[0]-start[0],end[2]-start[2]);
   const count=Math.max(2,Math.floor(length/.32));
   for(let i=1;i<count;i++){
@@ -1787,12 +2231,14 @@ function addSquareRoof(group,room,baseY,roofMaterial,gableMaterial,trimMaterial)
   addBox(roof,.15,.022,.15,.08,baseY+rise+.68,chimneyZ,new THREE.MeshStandardMaterial({color:currentHouseStyle().chimneyTop,roughness:1}),false);
 
   // Small decorative ridge finials.
-  const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
-  for(let z=-d*.42;z<=d*.42;z+=.34){
-    const finial=new THREE.Mesh(new THREE.CylinderGeometry(.012,.027,.1,6),finialMaterial);
-    finial.position.set(0,baseY+rise+.12,z);
-    finial.castShadow=true;
-    roof.add(finial);
+  if(!hasThatchedRoof()){
+    const finialMaterial=new THREE.MeshStandardMaterial({color:currentHouseStyle().finial,roughness:.7,metalness:.22});
+    for(let z=-d*.42;z<=d*.42;z+=.34){
+      const finial=new THREE.Mesh(new THREE.CylinderGeometry(.012,.027,.1,6),finialMaterial);
+      finial.position.set(0,baseY+rise+.12,z);
+      finial.castShadow=true;
+      roof.add(finial);
+    }
   }
 }
 
@@ -1908,20 +2354,124 @@ function collectDiagonalWallData(floorIndex){
   return {suppressed,edges};
 }
 
+function matrixBoundaryEdges(matrix){
+  const edges=[],rows=matrix.length,cols=matrix[0].length;
+  const occupied=(r,c)=>r>=0&&r<rows&&c>=0&&c<cols&&matrix[r][c]==='X';
+  const add=(ax,ay,bx,by)=>edges.push([[ax,ay],[bx,by]]);
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(occupied(r,c)){
+    if(!occupied(r-1,c))add(c,r,c+1,r);
+    if(!occupied(r,c+1))add(c+1,r,c+1,r+1);
+    if(!occupied(r+1,c))add(c+1,r+1,c,r+1);
+    if(!occupied(r,c-1))add(c,r+1,c,r);
+  }
+  return edges;
+}
+
+function matrixBoundaryLoops(matrix){
+  const edges=matrixBoundaryEdges(matrix),byStart=new Map();
+  const key=point=>`${point[0]},${point[1]}`;
+  edges.forEach((edge,index)=>{
+    const start=key(edge[0]);
+    if(!byStart.has(start))byStart.set(start,[]);
+    byStart.get(start).push(index);
+  });
+  const unused=new Set(edges.map((_,index)=>index)),loops=[];
+  while(unused.size){
+    const first=unused.values().next().value,start=edges[first][0],loop=[start];
+    let index=first;
+    while(index!==undefined&&unused.has(index)){
+      unused.delete(index);
+      const end=edges[index][1];
+      if(key(end)===key(start))break;
+      loop.push(end);
+      index=(byStart.get(key(end))||[]).find(candidate=>unused.has(candidate));
+    }
+    if(loop.length>=3)loops.push(loop);
+  }
+  return loops;
+}
+
+function polygonArea(points){
+  return points.reduce((area,point,index)=>{
+    const next=points[(index+1)%points.length];
+    return area+point[0]*next[1]-next[0]*point[1];
+  },0)/2;
+}
+
+function matrixRoomOutline(room){
+  const loops=matrixBoundaryLoops(room.matrix);
+  if(!loops.length)return [];
+  const outer=loops.reduce((best,loop)=>Math.abs(polygonArea(loop))>Math.abs(polygonArea(best))?loop:best,loops[0]);
+  return outer.map(([col,row])=>[room.left+col,room.top+row]);
+}
+
+function distanceToSegment2D(px,py,a,b){
+  const dx=b[0]-a[0],dy=b[1]-a[1],lengthSq=dx*dx+dy*dy;
+  const t=lengthSq?Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/lengthSq)):0;
+  return Math.hypot(px-(a[0]+dx*t),py-(a[1]+dy*t));
+}
+
+function roomStairCenter(room){
+  const matrix=room.matrix,rows=matrix.length,cols=matrix[0].length;
+  const target=[cols/2,rows/2],edges=matrixBoundaryEdges(matrix);
+  const clearance=point=>Math.min(...edges.map(edge=>distanceToSegment2D(point[0],point[1],edge[0],edge[1])));
+  const required=SPIRAL_OPENING_RADIUS/MODEL_TILE+.08;
+  let local=target;
+  if(clearance(target)<required){
+    const candidates=[];
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(matrix[r][c]==='X'){
+      const point=[c+.5,r+.5],space=clearance(point);
+      candidates.push({point,space,distance:Math.hypot(point[0]-target[0],point[1]-target[1])});
+    }
+    const safe=candidates.filter(candidate=>candidate.space>=required);
+    const pool=safe.length?safe:candidates;
+    pool.sort((a,b)=>safe.length?a.distance-b.distance:b.space-a.space||a.distance-b.distance);
+    if(pool[0])local=pool[0].point;
+  }
+  return {
+    x:(room.left+local[0]-COLS/2)*MODEL_TILE,
+    z:(room.top+local[1]-ROWS/2)*MODEL_TILE
+  };
+}
+
+function linkedLowerStairRoom(room){
+  return placedRooms.find(candidate=>candidate.withStairs&&candidate.floor===room.floor-1&&candidate.linkedIds.includes(room.id));
+}
+
+function linkedUpperStairRoom(room){
+  return placedRooms.find(candidate=>candidate.floor===room.floor+1&&room.linkedIds.includes(candidate.id));
+}
+
+function stairOpeningForRoom(room){
+  const lower=linkedLowerStairRoom(room);
+  return lower?roomStairCenter(lower):null;
+}
+
 function addRoomFloorSlabs(group,floorIndex,baseY,slabH,material){
   placedRooms.filter(room=>room.floor===floorIndex).forEach(room=>{
-    if(SHAPES[room.idx].polygon){
-      const points=polygonRoomPoints(room);
+    const opening=stairOpeningForRoom(room);
+    if(SHAPES[room.idx].polygon||opening){
+      const points=SHAPES[room.idx].polygon?polygonRoomPoints(room):matrixRoomOutline(room);
       const shape=new THREE.Shape();
       points.forEach(([col,row],index)=>{
         const x=(col-COLS/2)*MODEL_TILE,z=(row-ROWS/2)*MODEL_TILE;
         if(index===0)shape.moveTo(x,z);else shape.lineTo(x,z);
       });
       shape.closePath();
-      const geometry=new THREE.ExtrudeGeometry(shape,{depth:slabH,bevelEnabled:false,steps:1});
+      if(opening){
+        const hole=new THREE.Path();
+        hole.absarc(opening.x,opening.z,SPIRAL_OPENING_RADIUS,0,Math.PI*2,true);
+        shape.holes.push(hole);
+      }
+      const geometry=new THREE.ExtrudeGeometry(shape,{depth:slabH,bevelEnabled:false,steps:1,curveSegments:40});
       geometry.rotateX(Math.PI/2);
       const mesh=new THREE.Mesh(geometry,material);
       mesh.position.y=baseY+slabH;mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+      if(opening){
+        const rim=new THREE.Mesh(new THREE.TorusGeometry(SPIRAL_OPENING_RADIUS,.035,7,40),material);
+        rim.rotation.x=Math.PI/2;rim.position.set(opening.x,baseY+slabH+.012,opening.z);
+        rim.castShadow=true;rim.receiveShadow=true;group.add(rim);
+      }
       return;
     }
     for(let r=0;r<room.matrix.length;r++){
@@ -1934,6 +2484,31 @@ function addRoomFloorSlabs(group,floorIndex,baseY,slabH,material){
       }
     }
   });
+}
+
+function addSpiralStair(group,room,baseY,slabH,levelH,stepMaterial,railMaterial){
+  if(!linkedUpperStairRoom(room))return;
+  const center=roomStairCenter(room),bottom=baseY+slabH+.035;
+  const steps=22,turns=1.65,startAngle=-Math.PI*.65;
+  const radialLength=.58,stepWidth=.21,outerRadius=.62,railHeight=.34;
+  const poleHeight=levelH+.08;
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,poleHeight,12),railMaterial);
+  pole.position.set(center.x,bottom+poleHeight/2-.035,center.z);pole.castShadow=true;group.add(pole);
+  const railPoints=[];
+  for(let i=0;i<steps;i++){
+    const t=i/(steps-1),angle=startAngle+turns*Math.PI*2*t;
+    const y=bottom+t*(levelH-.07),middleRadius=radialLength/2+.055;
+    const step=addBox(group,radialLength,.055,stepWidth,center.x+Math.cos(angle)*middleRadius,y,center.z+Math.sin(angle)*middleRadius,stepMaterial);
+    step.rotation.y=-angle;step.castShadow=true;
+    const outerX=center.x+Math.cos(angle)*outerRadius,outerZ=center.z+Math.sin(angle)*outerRadius;
+    if(i%2===0||i===steps-1){
+      const baluster=new THREE.Mesh(new THREE.CylinderGeometry(.014,.018,railHeight,7),railMaterial);
+      baluster.position.set(outerX,y+railHeight/2,outerZ);baluster.castShadow=true;group.add(baluster);
+    }
+    railPoints.push(new THREE.Vector3(outerX,y+railHeight,outerZ));
+  }
+  const handrail=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(railPoints),steps*4,.018,7,false),railMaterial);
+  handrail.castShadow=true;group.add(handrail);
 }
 
 function addDiagonalWall(group,start,end,baseY,wallH,slabH,wallT,profile){
@@ -1973,7 +2548,7 @@ function addProfiledWallBox(group,sx,sy,sz,x,y,z,profile,wallH){
   if(top>upperBottom) addBox(group,sx,top-upperBottom,sz,x,(upperBottom+top)/2,z,profile.wall);
 }
 
-function addOpeningAssembly(group,data,baseY,wallH,slabH,profile,glassMaterial,interiorMaterial){
+function addOpeningAssembly(group,data,baseY,wallH,slabH,profile,glassMaterial){
   const unit=MODEL_TILE;
   const trimMaterial=profile.trim;
   const frame=new THREE.Group();
@@ -1998,21 +2573,63 @@ function addOpeningAssembly(group,data,baseY,wallH,slabH,profile,glassMaterial,i
       const a=addBox(frame,.02,glassH*.78,.04,x,sill+openingH/2,.125,trimMaterial,false); a.rotation.z=.62;
       const b=addBox(frame,.02,glassH*.78,.04,x,sill+openingH/2,.128,trimMaterial,false); b.rotation.z=-.62;
     }
-  } else {
-    const openingW=width*.78, openingH=wallH*.67;
+  } else if(data.type==='arch') {
+    const openingW=width*.78, openingH=wallH*.72;
     const sideW=(width-openingW)/2;
     const topH=wallH-openingH;
-    const jambW=Math.min(.1,wallH*.07), jambH=openingH*.92;
+    const jambW=Math.min(.075,wallH*.055);
     addProfiledWallBox(frame,sideW,openingH,depth,-(openingW+sideW)/2,openingH/2,0,profile,wallH);
     addProfiledWallBox(frame,sideW,openingH,depth,(openingW+sideW)/2,openingH/2,0,profile,wallH);
     addProfiledWallBox(frame,width,topH,depth,0,openingH+topH/2,0,profile,wallH);
-    addBox(frame,openingW-jambW,openingH-jambW,.025,0,(openingH-jambW)/2,.075,interiorMaterial,false);
-    addBox(frame,jambW,jambH,.2,-width*.4,jambH/2,0,trimMaterial);
-    addBox(frame,jambW,jambH,.2,width*.4,jambH/2,0,trimMaterial);
-    addBox(frame,width*.94,jambW*1.3,.22,0,jambH,0,trimMaterial);
-    addBox(frame,width*1.04,jambW,.2,0,openingH+.02,0,trimMaterial);
-    addBox(frame,jambW*1.8,jambW*1.6,.23,0,jambH+.01,.005,trimMaterial);
+
+    // Moldura reta ao redor de uma passagem totalmente vazada.
+    addBox(frame,jambW,openingH,.19,-openingW/2,openingH/2,.015,trimMaterial);
+    addBox(frame,jambW,openingH,.19,openingW/2,openingH/2,.015,trimMaterial);
+    addBox(frame,openingW+jambW*2,jambW,.19,0,openingH,.015,trimMaterial);
   }
+}
+
+const PILLAR_INSET_TILES=.28;
+
+function insetPillarPoint(col,row,targetCol,targetRow){
+  const dc=targetCol-col,dr=targetRow-row,length=Math.hypot(dc,dr)||1;
+  return {col:col+dc/length*PILLAR_INSET_TILES,row:row+dr/length*PILLAR_INSET_TILES};
+}
+
+function roomPillarPoints(room){
+  if(SHAPES[room.idx].polygon){
+    const outline=polygonRoomPoints(room);
+    const center=outline.reduce((sum,[col,row])=>({col:sum.col+col,row:sum.row+row}),{col:0,row:0});
+    center.col/=outline.length;
+    center.row/=outline.length;
+    return outline.map(([col,row])=>insetPillarPoint(col,row,center.col,center.row));
+  }
+
+  const matrix=room.matrix,points=[];
+  for(let vertexRow=0;vertexRow<=matrix.length;vertexRow++){
+    for(let vertexCol=0;vertexCol<=matrix[0].length;vertexCol++){
+      const touching=[];
+      for(const rowOffset of [-1,0]) for(const colOffset of [-1,0]){
+        const row=vertexRow+rowOffset,col=vertexCol+colOffset;
+        if(matrix[row]&&matrix[row][col]==='X') touching.push({col:col+.5,row:row+.5});
+      }
+      if(touching.length!==1&&touching.length!==3) continue;
+      const target=touching.reduce((sum,point)=>({col:sum.col+point.col,row:sum.row+point.row}),{col:0,row:0});
+      target.col/=touching.length;
+      target.row/=touching.length;
+      const point=insetPillarPoint(vertexCol,vertexRow,target.col,target.row);
+      points.push({col:room.left+point.col,row:room.top+point.row});
+    }
+  }
+  return points;
+}
+
+function pillarHasSupportBelow(room,point){
+  return occupiedAt(room.floor-1,Math.floor(point.row),Math.floor(point.col));
+}
+
+function roomNeedsPillars(room){
+  return room.floor>0;
 }
 
 function rebuildModel(){
@@ -2027,11 +2644,11 @@ function rebuildModel(){
   const style=currentHouseStyle();
   const wallMat=new THREE.MeshStandardMaterial({color:style.wall,roughness:.92});
   const trimMat=new THREE.MeshStandardMaterial({color:style.trim,roughness:.9});
-  const slabMat=new THREE.MeshStandardMaterial({color:style.slab,roughness:1});
+  const slabMat=new THREE.MeshStandardMaterial({color:HOUSE_FLOOR_COLOR,roughness:.9,metalness:0});
   const roofMat=new THREE.MeshStandardMaterial({color:style.roof,roughness:style.roofRoughness,metalness:.05});
   const pillarMat=new THREE.MeshStandardMaterial({color:style.pillar,roughness:.95});
   const glassMat=new THREE.MeshStandardMaterial({color:style.glass,roughness:.32,metalness:.18});
-  const interiorMat=new THREE.MeshStandardMaterial({color:style.door,roughness:.9});
+  const stairRailMat=new THREE.MeshStandardMaterial({color:style.ridge||style.trim,roughness:.84,metalness:.08});
   const foundationMat=style.foundation?new THREE.MeshStandardMaterial({color:style.foundation,roughness:.96}):wallMat;
   const upperWallMat=style.upperWall?new THREE.MeshStandardMaterial({color:style.upperWall,roughness:.92}):wallMat;
   const upperTrimMat=style.upperTrim?new THREE.MeshStandardMaterial({color:style.upperTrim,roughness:.9}):trimMat;
@@ -2062,29 +2679,34 @@ function rebuildModel(){
       if(!occupiedAt(floorIndex,r,c+1) && !openingData.segments.has(`v:${r}:${c+1}`) && !diagonalData.suppressed.has(`v:${r}:${c+1}`)) addWallSegment(x+unit/2,y,z,wallT,wallH,unit,'z',wallProfile,baseY,slabH);
     }
     diagonalData.edges.forEach(([start,end])=>addDiagonalWall(modelGroup,start,end,baseY,wallH,slabH,wallT,wallProfile));
-    openingData.assemblies.forEach(opening=>addOpeningAssembly(modelGroup,opening,baseY,wallH,slabH,wallProfile,glassMat,interiorMat));
+    openingData.assemblies.forEach(opening=>addOpeningAssembly(modelGroup,opening,baseY,wallH,slabH,wallProfile,glassMat));
   });
 
   const visibleRooms=placedRooms.filter(room=>visibleFloors.includes(room.floor));
+  visibleRooms.filter(room=>room.withStairs).forEach(room=>{
+    addSpiralStair(modelGroup,room,room.floor*levelH,slabH,levelH,trimMat,stairRailMat);
+  });
+  const placedPillars=new Set();
   visibleRooms.forEach(room=>{
-    if(room.floor>0 && !room.generated){
-      const candidates=[
-        [room.top,room.left],[room.top,room.left+room.matrix[0].length-1],
-        [room.top+room.matrix.length-1,room.left],[room.top+room.matrix.length-1,room.left+room.matrix[0].length-1]
-      ];
-      const seen=new Set();
-      candidates.forEach(([r,c])=>{
-        const key=`${r},${c}`; if(seen.has(key)||occupiedAt(room.floor-1,r,c))return; seen.add(key);
+    if(roomNeedsPillars(room)){
+      roomPillarPoints(room).forEach(point=>{
+        const key=`${point.col.toFixed(3)},${point.row.toFixed(3)}`;
+        if(placedPillars.has(key)||pillarHasSupportBelow(room,point)) return;
+        placedPillars.add(key);
         const h=room.floor*levelH;
-        addBox(modelGroup,.28,h,.28,(c+.5-COLS/2)*unit,h/2,(r+.5-ROWS/2)*unit,pillarMat);
-        addBox(modelGroup,.42,.14,.42,(c+.5-COLS/2)*unit,.07,(r+.5-ROWS/2)*unit,trimMat);
+        const x=(point.col-COLS/2)*unit,z=(point.row-ROWS/2)*unit;
+        addBox(modelGroup,.28,h,.28,x,h/2,z,pillarMat);
+        addBox(modelGroup,.42,.14,.42,x,.07,z,trimMat);
       });
     }
     if(showRoof){
       const covered=room.cells.some(([r,c])=>floors.slice(room.floor+1).some(f=>f.occupied[r][c]));
       if(!covered){
         const roofBase=room.floor*levelH+slabH+wallH;
-        const roofProfile=wallProfileForFloor(room.floor),gableMat=roofProfile.wall,roofTrim=roofProfile.trim;
+        const roofProfile=wallProfileForFloor(room.floor),gableMat=roofProfile.wall;
+        // Na madeira básica, cumeeiras e acabamentos são feixes da própria palha,
+        // sem as vigas contrastantes usadas pelos demais estilos.
+        const roofTrim=hasThatchedRoof()?roofMat:roofProfile.trim;
         if(room.idx===0) addSquareRoof(modelGroup,room,roofBase,roofMat,gableMat,roofTrim);
         else if(room.idx===1) addSmallSquareRoof(modelGroup,room,roofBase,roofMat,gableMat,roofTrim);
         else if(room.idx===2) addSquareLargeRoof(modelGroup,room,roofBase,roofMat,gableMat,roofTrim);
@@ -2187,7 +2809,7 @@ function updateHouseStyleEditor(){
   const style=currentHouseStyle();
   const swatches=document.getElementById('houseStyleSwatches');
   swatches.innerHTML='';
-  ['wall','roof','trim','door','glass'].forEach(key=>{
+  ['wall','roof','trim','pillar','glass'].forEach(key=>{
     const swatch=document.createElement('span');swatch.className='style-swatch';swatch.style.background=cssColor(style[key]);swatches.appendChild(swatch);
   });
   document.getElementById('houseStyleDescription').textContent=style.description;
@@ -2196,12 +2818,76 @@ document.getElementById('houseStyleSelect').addEventListener('change',event=>{
   HOUSE_STYLE=event.target.value;
   updateHouseStyleEditor();
   scheduleModelRebuild();
+  saveLayoutSoon();
 });
 updateHouseStyleEditor();
 
+const layoutDialog=document.getElementById('layoutDialog');
+const layoutCodeEl=document.getElementById('layoutCode');
+const layoutDialogTitle=document.getElementById('layoutDialogTitle');
+const layoutDialogHelp=document.getElementById('layoutDialogHelp');
+const layoutDialogMessage=document.getElementById('layoutDialogMessage');
+const copyLayoutCodeBtn=document.getElementById('copyLayoutCodeBtn');
+const applyLayoutCodeBtn=document.getElementById('applyLayoutCodeBtn');
+
+function setLayoutDialogMessage(message,isError=false){
+  layoutDialogMessage.textContent=message;
+  layoutDialogMessage.classList.toggle('error',isError);
+}
+
+function openLayoutDialog(mode){
+  const exporting=mode==='export';
+  layoutDialogTitle.textContent=exporting?'Compartilhar layout':'Importar layout';
+  layoutDialogHelp.textContent=exporting
+    ?'Envie este código para outra pessoa. Ele contém pisos, cômodos, rotações, aberturas e o estilo da casa.'
+    :'Cole abaixo um código compartilhado. O layout atual será substituído, mas você poderá customizar o importado normalmente.';
+  layoutCodeEl.value=exporting?encodeLayoutCode(serializeLayout()):'';
+  copyLayoutCodeBtn.style.display=exporting?'':'none';
+  applyLayoutCodeBtn.style.display=exporting?'none':'';
+  setLayoutDialogMessage('');
+  layoutDialog.classList.add('open');
+  setTimeout(()=>{
+    layoutCodeEl.focus();
+    if(exporting) layoutCodeEl.select();
+  },0);
+}
+
+function closeLayoutDialog(){ layoutDialog.classList.remove('open'); }
+
+async function copyLayoutCode(){
+  layoutCodeEl.select();
+  try{
+    if(navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(layoutCodeEl.value);
+    else if(!document.execCommand('copy')) throw new Error('copy failed');
+    setLayoutDialogMessage('Código copiado. Agora é só compartilhar!');
+  } catch(error){
+    setLayoutDialogMessage('Selecione o código e copie manualmente com Ctrl+C.',true);
+  }
+}
+
+document.getElementById('exportLayoutBtn').addEventListener('click',()=>openLayoutDialog('export'));
+document.getElementById('importLayoutBtn').addEventListener('click',()=>openLayoutDialog('import'));
+document.getElementById('closeLayoutDialogBtn').addEventListener('click',closeLayoutDialog);
+copyLayoutCodeBtn.addEventListener('click',copyLayoutCode);
+applyLayoutCodeBtn.addEventListener('click',()=>{
+  try{
+    const payload=decodeLayoutCode(layoutCodeEl.value);
+    setLotMoveMode(false);
+    applyLayoutData(payload);
+    closeLayoutDialog();
+    showStatus('Layout importado e salvo neste navegador.');
+  } catch(error){
+    setLayoutDialogMessage(error instanceof Error?error.message:'Não foi possível importar este código.',true);
+  }
+});
+layoutDialog.addEventListener('mousedown',event=>{ if(event.target===layoutDialog) closeLayoutDialog(); });
+window.addEventListener('keydown',event=>{ if(event.key==='Escape'&&layoutDialog.classList.contains('open')) closeLayoutDialog(); });
+
 buildPalette();
-buildFloorTabs();
-updateTotals();
+if(!restoreSavedLayout()){
+  buildFloorTabs();
+  updateTotals();
+}
 initThree();
 </script>
 </body>
