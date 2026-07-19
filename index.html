@@ -62,6 +62,8 @@
   button.primary:hover{ background:var(--accent-dark); border-color:var(--accent-dark); }
   #total{ font-weight:bold; font-size: 15px; }
   #appStatus{ flex-basis:100%; min-height:14px; color:#6d665d; font-size:11px; }
+  .lang-switch{ position:fixed; top:16px; right:16px; z-index:1600; display:flex; gap:5px; }
+  .lang-switch button{ font-size:11px; padding:5px 9px; }
   #plot.lot-move-ready{ cursor:move; box-shadow:0 0 0 3px rgba(149,98,60,.28); }
   #plot.lot-moving .room{ cursor:grabbing; transition:none; }
   .floor-bar{ display:flex; align-items:center; gap:7px; margin-bottom:10px; }
@@ -135,6 +137,7 @@
   .help{ font-size: 11px; color:#666; margin-top: 8px; line-height:1.4; grid-column: 1 / -1; }
   .rooms-card{ width:100%; margin-bottom:12px; padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; backdrop-filter:none; }
   .rooms-card .card-title{ margin:0 0 6px; padding:0 2px; }
+  .rooms-card .card-title span{ margin-top:26px; }
   .viewer-card{ min-height:520px; display:flex; flex-direction:column; }
   #threeWrap{ position:relative; flex:1; min-height:470px; overflow:hidden; border-radius:10px; background:linear-gradient(#87ceeb 0 64%,#63a848 64%); border:1px solid #8ab59c; }
   #threeCanvas{ display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
@@ -163,20 +166,25 @@
 </head>
 <body>
 
+<div class="lang-switch" id="langSwitch" role="group" aria-label="Language">
+  <button type="button" id="langBtnPt" data-lang="pt">Português</button>
+  <button type="button" id="langBtnEn" data-lang="en">English</button>
+</div>
+
 <section class="card rooms-card">
-  <div class="card-title"><h2>Cômodos</h2><span>Arraste para a planta</span></div>
+  <div class="card-title"><h2 id="roomsHeading">Cômodos</h2><span id="roomsHint">Arraste para a planta</span></div>
   <div id="palette"></div>
 </section>
 
 <div class="workspace">
   <section class="card planner-card">
     <header class="planner-intro">
-      <h1>Planejador de Casa</h1>
-      <div class="sub">Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Clique num cômodo para removê-lo.</div>
+      <h1 id="appTitle">Planejador de Casa</h1>
+      <div class="sub" id="introSub">Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Clique num cômodo para removê-lo.</div>
       <div class="top-bar">
-        <div>Cômodos: <span id="count">0</span> / 25</div>
+        <div><span id="roomsCountLabel">Cômodos:</span> <span id="count">0</span> / 25</div>
         <div id="total">Total: 0 gp</div>
-        <button id="moveLotBtn" type="button" title="Mova toda a construção mantendo as posições relativas">Mover lote</button>
+        <button id="moveLotBtn" type="button">Mover lote</button>
         <button id="exportLayoutBtn" type="button">Compartilhar código</button>
         <button id="importLayoutBtn" type="button">Importar código</button>
         <button id="clearFloorBtn">Limpar piso</button>
@@ -185,30 +193,24 @@
       </div>
     </header>
     <div class="planner-floor">
-      <div class="card-title"><h2>Planta baixa</h2><span id="floorLabel">Piso térreo</span></div>
+      <div class="card-title"><h2 id="floorplanHeading">Planta baixa</h2><span id="floorLabel">Piso térreo</span></div>
       <div class="floor-bar">
         <div id="floorTabs"></div>
       </div>
       <div class="plot-wrap"><div id="plot"></div></div>
     </div>
     <div class="opening-editor">
-      <div class="opening-editor-title"><strong>Elementos da fachada</strong><span>Arraste para uma faixa vermelha do piso atual</span></div>
+      <div class="opening-editor-title"><strong id="openingHeading">Elementos da fachada</strong><span id="openingHint">Arraste para uma faixa vermelha do piso atual</span></div>
       <div id="openingPalette">
-        <div class="opening-item" data-opening="wall"><span class="opening-icon"></span>Parede lisa</div>
-        <div class="opening-item" data-opening="window"><span class="opening-icon window"></span>Janela</div>
-        <div class="opening-item" data-opening="arch"><span class="opening-icon arch"></span>Arco</div>
+        <div class="opening-item" data-opening="wall"><span class="opening-icon"></span><span id="openingWallLabel">Parede lisa</span></div>
+        <div class="opening-item" data-opening="window"><span class="opening-icon window"></span><span id="openingWindowLabel">Janela</span></div>
+        <div class="opening-item" data-opening="arch"><span class="opening-icon arch"></span><span id="openingArchLabel">Arco</span></div>
       </div>
     </div>
     <div class="style-editor">
-      <div class="style-editor-title"><strong>Estilo da casa</strong><span>Materiais do modelo 3D</span></div>
+      <div class="style-editor-title"><strong id="styleHeading">Estilo da casa</strong><span id="styleSubheading">Materiais do modelo 3D</span></div>
       <div class="style-editor-row">
-        <select id="houseStyleSelect" aria-label="Estilo da casa">
-          <option value="wood_basic">Madeira básica</option>
-          <option value="stone_basic">Pedra básica</option>
-          <option value="stone_elegant" selected>Pedra elegante</option>
-          <option value="stone_dark">Pedra escura</option>
-          <option value="fremennik">Madeira Fremennik</option>
-        </select>
+        <select id="houseStyleSelect" aria-label="Estilo da casa"></select>
         <div id="houseStyleSwatches" class="style-swatches" aria-hidden="true"></div>
       </div>
       <div id="houseStyleDescription" class="style-description"></div>
@@ -228,16 +230,16 @@
   </section>
   <section class="card viewer-card">
     <div class="card-title">
-      <h2>Modelo isométrico</h2>
+      <h2 id="viewerHeading">Modelo isométrico</h2>
       <div class="viewer-controls">
-        <label><input id="roofToggle" type="checkbox" checked> Telhados</label>
-        <label><input id="floorFocusToggle" type="checkbox"> Isolar piso</label>
+        <label><input id="roofToggle" type="checkbox" checked> <span id="roofToggleLabel">Telhados</span></label>
+        <label><input id="floorFocusToggle" type="checkbox"> <span id="floorFocusLabel">Isolar piso</span></label>
         <button id="resetViewBtn">Centralizar</button>
       </div>
     </div>
     <div id="threeWrap">
       <canvas id="threeCanvas"></canvas>
-      <div class="viewer-hint">Arraste para girar · roda para aproximar</div>
+      <div class="viewer-hint" id="viewerHint">Arraste para girar · roda para aproximar</div>
     </div>
   </section>
 </div>
@@ -271,6 +273,128 @@ let MODEL_WALL_HEIGHT = 1.45;
 let MODEL_LEVEL_HEIGHT = 1.45;
 let MODEL_ROOF_RISE = 1.1;
 const SPIRAL_OPENING_RADIUS = .68;
+
+// ---- i18n ----
+const LANG_STORAGE_KEY = 'poh-planner-lang';
+const I18N = {
+  pt: {
+    app_title:'Planejador de Casa', rooms_heading:'Cômodos', rooms_hint:'Arraste para a planta',
+    intro_sub:'Arraste um cômodo para a planta. Durante o arraste, use a roda do mouse para girar 90°. Clique num cômodo para removê-lo.',
+    rooms_count_label:'Cômodos:', move_lot_btn:'Mover lote', move_lot_btn_cancel:'Cancelar movimento',
+    move_lot_title:'Mova toda a construção mantendo as posições relativas',
+    export_layout_btn:'Compartilhar código', import_layout_btn:'Importar código',
+    clear_floor_btn:'Limpar piso', clear_all_btn:'Limpar tudo', floorplan_heading:'Planta baixa',
+    opening_heading:'Elementos da fachada', opening_hint:'Arraste para uma faixa vermelha do piso atual',
+    opening_wall:'Parede lisa', opening_window:'Janela', opening_arch:'Arco',
+    style_heading:'Estilo da casa', style_subheading:'Materiais do modelo 3D', style_select_label:'Estilo da casa',
+    viewer_heading:'Modelo isométrico', roof_toggle_label:'Telhados', floor_focus_label:'Isolar piso',
+    reset_view_btn:'Centralizar', viewer_hint:'Arraste para girar · roda para aproximar',
+    close_dialog_label:'Fechar', layout_code_label:'Código do layout', copy_layout_btn:'Copiar código',
+    import_layout_apply_btn:'Importar layout', share_layout_title:'Compartilhar layout', import_layout_title:'Importar layout',
+    share_layout_help:'Envie este código para outra pessoa. Ele contém pisos, cômodos, rotações, aberturas e o estilo da casa.',
+    import_layout_help:'Cole abaixo um código compartilhado. O layout atual será substituído, mas você poderá customizar o importado normalmente.',
+    floor_ground:'Piso térreo', floor_nth:'{n}º piso', floor_tab_ground:'Térreo', floor_tab_nth:'{n}º',
+    stair_section_title:'Cômodos com escada', stair_badge:'COM ESCADA', stair_limit_title:'O terceiro piso é o limite da construção.',
+    shape_estimated_prefix:'Est: ',
+    lot_move_hint:'Arraste qualquer cômodo para mover a construção inteira.',
+    lot_move_need_room:'Adicione ao menos um cômodo antes de mover o lote.',
+    lot_moved:'Construção movida e salva.', lot_move_invalid:'O lote não pode ser movido para fora da área da planta.',
+    floor_limit_reached:'A construção já atingiu o limite de {n} pisos.',
+    stair_drop_hint:'Solte este cômodo sobre a cópia verde da escada anterior.',
+    stack_rotate_blocked:'Uma coluna com andares superiores pode ser deslocada, mas não girada em conjunto.',
+    place_fail_stair_continuation:'A escada deve ser colocada sobre a cópia verde da escada do piso anterior.',
+    place_fail_stair_space:'Não há espaço livre neste piso e no piso acima para a escada.',
+    place_fail_generic:'Não é possível posicionar o cômodo nesse local.',
+    stair_continued:'Escada continuada até o terceiro piso.', copy_label:'cópia',
+    three_load_fail:'Não foi possível carregar o Three.js.',
+    save_fail:'Não foi possível salvar automaticamente neste navegador.',
+    restore_fail:'O layout salvo não pôde ser restaurado.',
+    invalid_code_format:'Este não parece ser um código do POH Planner.',
+    err_invalid_layout:'Código de layout inválido ou incompatível.',
+    err_too_many_rooms:'O layout ultrapassa o limite de {n} cômodos.',
+    err_invalid_ids:'O código contém identificadores de cômodo inválidos.',
+    err_unknown_type:'O código usa um tipo de cômodo desconhecido.',
+    err_invalid_rotation:'O código contém uma rotação inválida.',
+    err_too_many_floors:'O código ultrapassa o limite de {n} pisos.',
+    err_invalid_position:'O código contém uma posição inválida.',
+    err_out_of_bounds:'Há um cômodo fora dos limites do lote.',
+    err_overlap:'Há cômodos sobrepostos no código.',
+    err_invalid_stair_link:'O código contém uma ligação de escada inválida.',
+    code_copied:'Código copiado. Agora é só compartilhar!',
+    code_copy_fail:'Selecione o código e copie manualmente com Ctrl+C.',
+    layout_imported:'Layout importado e salvo neste navegador.',
+    layout_import_fail:'Não foi possível importar este código.',
+    total_label:'Total:',
+    style_wood_basic_label:'Madeira básica', style_wood_basic_desc:'Térreo meio pedra e meio madeira; pisos superiores inteiramente em madeira.',
+    style_stone_basic_label:'Pedra básica', style_stone_basic_desc:'Térreo de pedra clara; andares superiores em enxaimel claro.',
+    style_stone_elegant_label:'Pedra elegante', style_stone_elegant_desc:'A paleta original: pedra elegante, madeira escura e ardósia azul.',
+    style_stone_dark_label:'Pedra escura', style_stone_dark_desc:'Térreo de pedra escura; andares superiores em enxaimel escurecido.',
+    style_fremennik_label:'Madeira Fremennik', style_fremennik_desc:'Madeira nórdica, telhado de tábuas claras e torres de topo baixo.',
+    lang_pt:'Português', lang_en:'English'
+  },
+  en: {
+    app_title:'House Planner', rooms_heading:'Rooms', rooms_hint:'Drag onto the plot',
+    intro_sub:'Drag a room onto the plot. While dragging, use the mouse wheel to rotate 90°. Click a room to remove it.',
+    rooms_count_label:'Rooms:', move_lot_btn:'Move lot', move_lot_btn_cancel:'Cancel move',
+    move_lot_title:'Move the whole building while keeping relative positions',
+    export_layout_btn:'Share code', import_layout_btn:'Import code',
+    clear_floor_btn:'Clear floor', clear_all_btn:'Clear all', floorplan_heading:'Floor plan',
+    opening_heading:'Facade elements', opening_hint:'Drag onto a red strip of the current floor',
+    opening_wall:'Plain wall', opening_window:'Window', opening_arch:'Arch',
+    style_heading:'House style', style_subheading:'3D model materials', style_select_label:'House style',
+    viewer_heading:'Isometric model', roof_toggle_label:'Roofs', floor_focus_label:'Isolate floor',
+    reset_view_btn:'Center', viewer_hint:'Drag to rotate · scroll to zoom',
+    close_dialog_label:'Close', layout_code_label:'Layout code', copy_layout_btn:'Copy code',
+    import_layout_apply_btn:'Import layout', share_layout_title:'Share layout', import_layout_title:'Import layout',
+    share_layout_help:'Send this code to someone else. It contains floors, rooms, rotations, openings and the house style.',
+    import_layout_help:'Paste a shared code below. The current layout will be replaced, but you can customize the imported one normally.',
+    floor_ground:'Ground floor', floor_nth:'Floor {n}', floor_tab_ground:'Ground', floor_tab_nth:'{n}',
+    stair_section_title:'Rooms with stairs', stair_badge:'WITH STAIRS', stair_limit_title:'The third floor is the building limit.',
+    shape_estimated_prefix:'Est: ',
+    lot_move_hint:'Drag any room to move the entire building.',
+    lot_move_need_room:'Add at least one room before moving the lot.',
+    lot_moved:'Building moved and saved.', lot_move_invalid:'The lot cannot be moved outside the plot area.',
+    floor_limit_reached:'The building has already reached the {n}-floor limit.',
+    stair_drop_hint:'Drop this room onto the green copy of the previous stair.',
+    stack_rotate_blocked:'A column with upper floors can be moved, but not rotated together.',
+    place_fail_stair_continuation:'The stair must be placed on the green copy of the stair from the floor below.',
+    place_fail_stair_space:'There is no free space on this floor and the floor above for the stair.',
+    place_fail_generic:'The room cannot be placed there.',
+    stair_continued:'Stair continued up to the third floor.', copy_label:'copy',
+    three_load_fail:'Could not load Three.js.',
+    save_fail:'Could not auto-save in this browser.',
+    restore_fail:'The saved layout could not be restored.',
+    invalid_code_format:"This doesn't look like a POH Planner code.",
+    err_invalid_layout:'Invalid or incompatible layout code.',
+    err_too_many_rooms:'The layout exceeds the {n}-room limit.',
+    err_invalid_ids:'The code contains invalid room identifiers.',
+    err_unknown_type:'The code uses an unknown room type.',
+    err_invalid_rotation:'The code contains an invalid rotation.',
+    err_too_many_floors:'The code exceeds the {n}-floor limit.',
+    err_invalid_position:'The code contains an invalid position.',
+    err_out_of_bounds:'A room is outside the plot boundaries.',
+    err_overlap:'There are overlapping rooms in the code.',
+    err_invalid_stair_link:'The code contains an invalid stair link.',
+    code_copied:'Code copied. Now just share it!',
+    code_copy_fail:'Select the code and copy it manually with Ctrl+C.',
+    layout_imported:'Layout imported and saved in this browser.',
+    layout_import_fail:'Could not import this code.',
+    total_label:'Total:',
+    style_wood_basic_label:'Basic wood', style_wood_basic_desc:'Ground floor half stone, half wood; upper floors entirely in wood.',
+    style_stone_basic_label:'Basic stone', style_stone_basic_desc:'Ground floor in light stone; upper floors in light half-timber.',
+    style_stone_elegant_label:'Elegant stone', style_stone_elegant_desc:'The original palette: elegant stone, dark wood and blue slate.',
+    style_stone_dark_label:'Dark stone', style_stone_dark_desc:'Ground floor in dark stone; upper floors in darkened half-timber.',
+    style_fremennik_label:'Fremennik wood', style_fremennik_desc:'Nordic wood, light plank roofing and low-topped towers.',
+    lang_pt:'Português', lang_en:'English'
+  }
+};
+let LANG = localStorage.getItem(LANG_STORAGE_KEY) === 'en' ? 'en' : 'pt';
+function t(key, vars){
+  const dict = I18N[LANG] || I18N.pt;
+  let str = dict[key] !== undefined ? dict[key] : (I18N.pt[key] !== undefined ? I18N.pt[key] : key);
+  if(vars) Object.keys(vars).forEach(k => { str = str.replace(new RegExp('\\{'+k+'\\}','g'), vars[k]); });
+  return str;
+}
 
 const HOUSE_STYLES={
   wood_basic:{
@@ -524,24 +648,24 @@ function serializeLayout(){
 }
 
 function normalizeLayoutData(payload){
-  if(!payload || payload.v!==1 || !Array.isArray(payload.r)) throw new Error('Código de layout inválido ou incompatível.');
-  if(payload.r.length>MAX_ROOMS) throw new Error(`O layout ultrapassa o limite de ${MAX_ROOMS} cômodos.`);
+  if(!payload || payload.v!==1 || !Array.isArray(payload.r)) throw new Error(t('err_invalid_layout'));
+  if(payload.r.length>MAX_ROOMS) throw new Error(t('err_too_many_rooms',{n:MAX_ROOMS}));
   const ids=new Set();
   const grids=[];
   const rooms=payload.r.map(raw=>{
     const id=Number(raw.id),idx=Number(raw.i),polyRot=Number(raw.r),top=Number(raw.t),left=Number(raw.l),floor=Number(raw.f);
-    if(!Number.isInteger(id)||id<1||ids.has(id)) throw new Error('O código contém identificadores de cômodo inválidos.');
-    if(!Number.isInteger(idx)||!SHAPES[idx]) throw new Error('O código usa um tipo de cômodo desconhecido.');
-    if(!Number.isInteger(polyRot)||polyRot<0||polyRot>3) throw new Error('O código contém uma rotação inválida.');
-    if(!Number.isInteger(floor)||floor<0||floor>=MAX_FLOORS) throw new Error(`O código ultrapassa o limite de ${MAX_FLOORS} pisos.`);
-    if(!Number.isInteger(top)||!Number.isInteger(left)) throw new Error('O código contém uma posição inválida.');
+    if(!Number.isInteger(id)||id<1||ids.has(id)) throw new Error(t('err_invalid_ids'));
+    if(!Number.isInteger(idx)||!SHAPES[idx]) throw new Error(t('err_unknown_type'));
+    if(!Number.isInteger(polyRot)||polyRot<0||polyRot>3) throw new Error(t('err_invalid_rotation'));
+    if(!Number.isInteger(floor)||floor<0||floor>=MAX_FLOORS) throw new Error(t('err_too_many_floors',{n:MAX_FLOORS}));
+    if(!Number.isInteger(top)||!Number.isInteger(left)) throw new Error(t('err_invalid_position'));
     ids.add(id);
     const matrix=matrixForRotation(idx,polyRot);
     if(!grids[floor]) grids[floor]=new Set();
     for(let row=0;row<matrix.length;row++) for(let col=0;col<matrix[0].length;col++) if(matrix[row][col]==='X'){
       const rr=top+row,cc=left+col,key=`${rr},${cc}`;
-      if(rr<0||cc<0||rr>=ROWS||cc>=COLS) throw new Error('Há um cômodo fora dos limites do lote.');
-      if(grids[floor].has(key)) throw new Error('Há cômodos sobrepostos no código.');
+      if(rr<0||cc<0||rr>=ROWS||cc>=COLS) throw new Error(t('err_out_of_bounds'));
+      if(grids[floor].has(key)) throw new Error(t('err_overlap'));
       grids[floor].add(key);
     }
     const openings={};
@@ -555,7 +679,7 @@ function normalizeLayoutData(payload){
     return {sourceId:id,idx,polyRot,top,left,floor,openings,withStairs:!!raw.w,generated:!!raw.g,linkedSourceIds,matrix};
   });
   rooms.forEach(room=>{
-    if(room.linkedSourceIds.some(linkedId=>!Number.isInteger(linkedId)||linkedId===room.sourceId||!ids.has(linkedId))) throw new Error('O código contém uma ligação de escada inválida.');
+    if(room.linkedSourceIds.some(linkedId=>!Number.isInteger(linkedId)||linkedId===room.sourceId||!ids.has(linkedId))) throw new Error(t('err_invalid_stair_link'));
   });
   const maxFloor=rooms.reduce((max,room)=>Math.max(max,room.floor),0);
   const selectedFloor=Number.isInteger(Number(payload.f)) ? Math.max(0,Math.min(Number(payload.f),maxFloor)) : 0;
@@ -565,7 +689,7 @@ function normalizeLayoutData(payload){
 function saveLayoutNow(){
   if(isHydrating) return;
   try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(serializeLayout())); }
-  catch(error){ showStatus('Não foi possível salvar automaticamente neste navegador.'); }
+  catch(error){ showStatus(t('save_fail')); }
 }
 
 function saveLayoutSoon(){
@@ -614,7 +738,7 @@ function restoreSavedLayout(){
     applyLayoutData(JSON.parse(saved));
     return true;
   } catch(error){
-    showStatus('O layout salvo não pôde ser restaurado.');
+    showStatus(t('restore_fail'));
     return false;
   }
 }
@@ -629,7 +753,7 @@ function encodeLayoutCode(payload){
 function decodeLayoutCode(code){
   const cleaned=String(code||'').trim();
   if(cleaned.startsWith('{')) return JSON.parse(cleaned);
-  if(!cleaned.startsWith(LAYOUT_CODE_PREFIX)) throw new Error('Este não parece ser um código do POH Planner.');
+  if(!cleaned.startsWith(LAYOUT_CODE_PREFIX)) throw new Error(t('invalid_code_format'));
   let base64=cleaned.slice(LAYOUT_CODE_PREFIX.length).replace(/\s/g,'').replace(/-/g,'+').replace(/_/g,'/');
   base64+='='.repeat((4-base64.length%4)%4);
   const binary=atob(base64);
@@ -657,14 +781,14 @@ function pruneEmptyUpperFloors(){
 
 function fmtGp(n){ return n.toLocaleString() + " gp"; }
 
-function floorName(index){ return index === 0 ? 'Piso térreo' : `${index + 1}º piso`; }
+function floorName(index){ return index === 0 ? t('floor_ground') : t('floor_nth',{n:index+1}); }
 
 function buildFloorTabs(){
   floorTabsEl.innerHTML = '';
   floors.forEach((_, index) => {
     const btn = document.createElement('button');
     btn.className = 'floor-tab' + (index === currentFloor ? ' active' : '');
-    btn.textContent = index === 0 ? 'Térreo' : `${index + 1}º`;
+    btn.textContent = index === 0 ? t('floor_tab_ground') : t('floor_tab_nth',{n:index+1});
     btn.onclick = () => switchFloor(index);
     floorTabsEl.appendChild(btn);
   });
@@ -743,7 +867,7 @@ function renderShape(container, shapeDef, matrix, cellPx, polyRot, openings){
       const openingType = openings && openings[door.slotIndex];
       dd.className = 'door' + (openingType ? ' ' + openingType : '');
       dd.dataset.slotIndex = door.slotIndex;
-      dd.title = openingType === 'window' ? 'Janela' : openingType === 'arch' ? 'Arco' : 'Parede lisa';
+      dd.title = openingType === 'window' ? t('opening_window') : openingType === 'arch' ? t('opening_arch') : t('opening_wall');
       if(door.side === 'top' || door.side === 'bottom'){
         dd.style.width = (2*cellPx)+'px';
         dd.style.height = thick+'px';
@@ -772,7 +896,7 @@ function buildPalette(){
     SHAPES.forEach((s,i)=>addPaletteItem(s,i,withStairs));
   };
   addSection('',false);
-  addSection('Cômodos com escada',true);
+  addSection(t('stair_section_title'),true);
   updateStairPaletteAvailability();
 }
 
@@ -780,7 +904,7 @@ function updateStairPaletteAvailability(){
   const disabled=currentFloor>=MAX_FLOORS-1;
   paletteEl.querySelectorAll('.shape-item[data-stairs="true"]').forEach(item=>{
     item.classList.toggle('disabled',disabled);
-    item.title=disabled?'O terceiro piso é o limite da construção.':'';
+    item.title=disabled?t('stair_limit_title'):'';
   });
 }
 
@@ -806,13 +930,13 @@ function addPaletteItem(s,i,withStairs){
 
     const price = document.createElement('div');
     price.className = s.estimated ? 'shape-est' : 'shape-price';
-    price.textContent = (s.estimated? 'Est: ':'') + fmtGp(s.price) + (s.estimated? ' *':'');
+    price.textContent = (s.estimated? t('shape_estimated_prefix'):'') + fmtGp(s.price) + (s.estimated? ' *':'');
 
     item.appendChild(name);
     if(withStairs){
       const badge=document.createElement('div');
       badge.className='shape-stairs';
-      badge.textContent='COM ESCADA';
+      badge.textContent=t('stair_badge');
       item.appendChild(badge);
     }
     item.appendChild(price);
@@ -832,15 +956,16 @@ function setLotMoveMode(enabled){
   const button=document.getElementById('moveLotBtn');
   button.classList.toggle('active',lotMoveMode);
   button.setAttribute('aria-pressed',String(lotMoveMode));
-  button.textContent=lotMoveMode?'Cancelar movimento':'Mover lote';
+  button.textContent=lotMoveMode?t('move_lot_btn_cancel'):t('move_lot_btn');
+  button.title=t('move_lot_title');
   plotEl.classList.toggle('lot-move-ready',lotMoveMode);
-  if(lotMoveMode) showStatus('Arraste qualquer cômodo para mover a construção inteira.');
+  if(lotMoveMode) showStatus(t('lot_move_hint'));
 }
 
 function startLotDrag(e){
   if(!placedRooms.length){
     setLotMoveMode(false);
-    showStatus('Adicione ao menos um cômodo antes de mover o lote.');
+    showStatus(t('lot_move_need_room'));
     return;
   }
   drag={
@@ -880,22 +1005,22 @@ function finishLotDrag(e){
   drag=null;
   if(valid){
     setLotMoveMode(false);
-    showStatus('Construção movida e salva.');
+    showStatus(t('lot_moved'));
     saveLayoutSoon();
   } else if(state.moved){
-    showStatus('O lote não pode ser movido para fora da área da planta.');
+    showStatus(t('lot_move_invalid'));
   }
 }
 
 function startDrag(e, idx, withStairs=false){
   e.preventDefault();
   if(withStairs && currentFloor>=MAX_FLOORS-1){
-    showStatus(`A construção já atingiu o limite de ${MAX_FLOORS} pisos.`);
+    showStatus(t('floor_limit_reached',{n:MAX_FLOORS}));
     return;
   }
   if(withStairs&&currentFloor>0){
     setStairContinuationHighlights(true,idx);
-    showStatus('Solte este cômodo sobre a cópia verde da escada anterior.');
+    showStatus(t('stair_drop_hint'));
   }
   drag = {
     mode: 'new',
@@ -975,7 +1100,7 @@ function findStairContinuationTarget(idx,matrix,top,left){
 function renderGhost(){
   ghostEl.innerHTML = '';
   if(drag.mode === 'opening'){
-    const label = drag.openingType === 'window' ? 'Janela' : drag.openingType === 'arch' ? 'Arco' : 'Parede lisa';
+    const label = drag.openingType === 'window' ? t('opening_window') : drag.openingType === 'arch' ? t('opening_arch') : t('opening_wall');
     const chip = document.createElement('div');
     chip.className = 'feature-ghost ' + drag.openingType;
     chip.textContent = label;
@@ -1023,7 +1148,7 @@ function onDragWheel(e){
   if(drag.mode === 'opening'||drag.mode==='lot') return;
   if(drag.mode==='move'&&drag.stack&&drag.stack.length>1){
     e.preventDefault();
-    showStatus('Uma coluna com andares superiores pode ser deslocada, mas não girada em conjunto.');
+    showStatus(t('stack_rotate_blocked'));
     return;
   }
   e.preventDefault();
@@ -1083,8 +1208,8 @@ function onDragEnd(e){
   if(drag.mode === 'new'){
     if(overPlot && !placeRoom(drag.idx, drag.matrix, top, left, drag.polyRot, drag.withStairs,continuationRoom)){
       const message=drag.withStairs&&currentFloor>0
-        ?'A escada deve ser colocada sobre a cópia verde da escada do piso anterior.'
-        :drag.withStairs?'Não há espaço livre neste piso e no piso acima para a escada.':'Não é possível posicionar o cômodo nesse local.';
+        ?t('place_fail_stair_continuation')
+        :drag.withStairs?t('place_fail_stair_space'):t('place_fail_generic');
       showStatus(message);
     }
   } else {
@@ -1231,7 +1356,7 @@ function createPlacedRoom(idx,matrix,top,left,polyRot,floor,options={}){
 
   const lbl = document.createElement('div');
   lbl.className = 'lbl';
-  lbl.textContent = options.generated ? 'c\u00f3pia' : (s.price/1000)+'k';
+  lbl.textContent = options.generated ? t('copy_label') : (s.price/1000)+'k';
 
   const cells = occupyCells(matrix,top,left,floor);
   const openings=options.openings===undefined?defaultOpeningsForRoom(idx,floor):{...options.openings};
@@ -1272,7 +1397,7 @@ function continueStair(room){
   layoutRoomEl(room);
   buildFloorTabs();
   updateTotals();
-  showStatus('Escada continuada até o terceiro piso.');
+  showStatus(t('stair_continued'));
   return true;
 }
 
@@ -1411,7 +1536,7 @@ function removeRoom(id){
 function updateTotals(){
   countEl.textContent = placedRooms.length;
   const total = placedRooms.reduce((sum,r)=>sum+r.price,0);
-  totalEl.textContent = 'Total: ' + fmtGp(total);
+  totalEl.textContent = t('total_label') + ' ' + fmtGp(total);
   scheduleModelRebuild();
   saveLayoutSoon();
 }
@@ -1459,7 +1584,7 @@ function scheduleModelRebuild(){
 
 function initThree(){
   if(!window.THREE){
-    threeWrapEl.querySelector('.viewer-hint').textContent = 'Não foi possível carregar o Three.js.';
+    threeWrapEl.querySelector('.viewer-hint').textContent = t('three_load_fail');
     return;
   }
   scene = new THREE.Scene();
@@ -2810,14 +2935,24 @@ updateScaleReadout();
 */
 
 function cssColor(value){return '#'+value.toString(16).padStart(6,'0');}
+function buildHouseStyleOptions(){
+  const select=document.getElementById('houseStyleSelect');
+  select.innerHTML='';
+  Object.keys(HOUSE_STYLES).forEach(key=>{
+    const option=document.createElement('option');
+    option.value=key;
+    option.textContent=t(`style_${key}_label`);
+    select.appendChild(option);
+  });
+  select.value=HOUSE_STYLE;
+}
 function updateHouseStyleEditor(){
-  const style=currentHouseStyle();
   const swatches=document.getElementById('houseStyleSwatches');
   swatches.innerHTML='';
   ['wall','roof','trim','pillar','glass'].forEach(key=>{
-    const swatch=document.createElement('span');swatch.className='style-swatch';swatch.style.background=cssColor(style[key]);swatches.appendChild(swatch);
+    const swatch=document.createElement('span');swatch.className='style-swatch';swatch.style.background=cssColor(currentHouseStyle()[key]);swatches.appendChild(swatch);
   });
-  document.getElementById('houseStyleDescription').textContent=style.description;
+  document.getElementById('houseStyleDescription').textContent=t(`style_${HOUSE_STYLE}_desc`);
 }
 document.getElementById('houseStyleSelect').addEventListener('change',event=>{
   HOUSE_STYLE=event.target.value;
@@ -2825,6 +2960,7 @@ document.getElementById('houseStyleSelect').addEventListener('change',event=>{
   scheduleModelRebuild();
   saveLayoutSoon();
 });
+buildHouseStyleOptions();
 updateHouseStyleEditor();
 
 const layoutDialog=document.getElementById('layoutDialog');
@@ -2840,12 +2976,12 @@ function setLayoutDialogMessage(message,isError=false){
   layoutDialogMessage.classList.toggle('error',isError);
 }
 
+let layoutDialogMode=null;
 function openLayoutDialog(mode){
+  layoutDialogMode=mode;
   const exporting=mode==='export';
-  layoutDialogTitle.textContent=exporting?'Compartilhar layout':'Importar layout';
-  layoutDialogHelp.textContent=exporting
-    ?'Envie este código para outra pessoa. Ele contém pisos, cômodos, rotações, aberturas e o estilo da casa.'
-    :'Cole abaixo um código compartilhado. O layout atual será substituído, mas você poderá customizar o importado normalmente.';
+  layoutDialogTitle.textContent=exporting?t('share_layout_title'):t('import_layout_title');
+  layoutDialogHelp.textContent=exporting?t('share_layout_help'):t('import_layout_help');
   layoutCodeEl.value=exporting?encodeLayoutCode(serializeLayout()):'';
   copyLayoutCodeBtn.style.display=exporting?'':'none';
   applyLayoutCodeBtn.style.display=exporting?'none':'';
@@ -2864,9 +3000,9 @@ async function copyLayoutCode(){
   try{
     if(navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(layoutCodeEl.value);
     else if(!document.execCommand('copy')) throw new Error('copy failed');
-    setLayoutDialogMessage('Código copiado. Agora é só compartilhar!');
+    setLayoutDialogMessage(t('code_copied'));
   } catch(error){
-    setLayoutDialogMessage('Selecione o código e copie manualmente com Ctrl+C.',true);
+    setLayoutDialogMessage(t('code_copy_fail'),true);
   }
 }
 
@@ -2880,19 +3016,76 @@ applyLayoutCodeBtn.addEventListener('click',()=>{
     setLotMoveMode(false);
     applyLayoutData(payload);
     closeLayoutDialog();
-    showStatus('Layout importado e salvo neste navegador.');
+    showStatus(t('layout_imported'));
   } catch(error){
-    setLayoutDialogMessage(error instanceof Error?error.message:'Não foi possível importar este código.',true);
+    setLayoutDialogMessage(error instanceof Error?error.message:t('layout_import_fail'),true);
   }
 });
 layoutDialog.addEventListener('mousedown',event=>{ if(event.target===layoutDialog) closeLayoutDialog(); });
 window.addEventListener('keydown',event=>{ if(event.key==='Escape'&&layoutDialog.classList.contains('open')) closeLayoutDialog(); });
 
-buildPalette();
+// ---- Language switching ----
+function applyTranslations(){
+  document.documentElement.lang = LANG==='en' ? 'en' : 'pt-BR';
+  document.title = t('app_title');
+  document.getElementById('appTitle').textContent = t('app_title');
+  document.getElementById('roomsHeading').textContent = t('rooms_heading');
+  document.getElementById('roomsHint').textContent = t('rooms_hint');
+  document.getElementById('introSub').textContent = t('intro_sub');
+  document.getElementById('roomsCountLabel').textContent = t('rooms_count_label');
+  document.getElementById('exportLayoutBtn').textContent = t('export_layout_btn');
+  document.getElementById('importLayoutBtn').textContent = t('import_layout_btn');
+  document.getElementById('clearFloorBtn').textContent = t('clear_floor_btn');
+  document.getElementById('clearBtn').textContent = t('clear_all_btn');
+  document.getElementById('floorplanHeading').textContent = t('floorplan_heading');
+  document.getElementById('openingHeading').textContent = t('opening_heading');
+  document.getElementById('openingHint').textContent = t('opening_hint');
+  document.getElementById('openingWallLabel').textContent = t('opening_wall');
+  document.getElementById('openingWindowLabel').textContent = t('opening_window');
+  document.getElementById('openingArchLabel').textContent = t('opening_arch');
+  document.getElementById('styleHeading').textContent = t('style_heading');
+  document.getElementById('styleSubheading').textContent = t('style_subheading');
+  document.getElementById('houseStyleSelect').setAttribute('aria-label', t('style_select_label'));
+  document.getElementById('viewerHeading').textContent = t('viewer_heading');
+  document.getElementById('roofToggleLabel').textContent = t('roof_toggle_label');
+  document.getElementById('floorFocusLabel').textContent = t('floor_focus_label');
+  document.getElementById('resetViewBtn').textContent = t('reset_view_btn');
+  document.getElementById('viewerHint').textContent = t('viewer_hint');
+  document.getElementById('closeLayoutDialogBtn').setAttribute('aria-label', t('close_dialog_label'));
+  document.getElementById('layoutCode').setAttribute('aria-label', t('layout_code_label'));
+  document.getElementById('copyLayoutCodeBtn').textContent = t('copy_layout_btn');
+  document.getElementById('applyLayoutCodeBtn').textContent = t('import_layout_apply_btn');
+  if(layoutDialog.classList.contains('open') && layoutDialogMode) openLayoutDialog(layoutDialogMode);
+
+  const moveLotBtnEl=document.getElementById('moveLotBtn');
+  moveLotBtnEl.textContent = lotMoveMode ? t('move_lot_btn_cancel') : t('move_lot_btn');
+  moveLotBtnEl.title = t('move_lot_title');
+
+  document.getElementById('langBtnPt').classList.toggle('active', LANG==='pt');
+  document.getElementById('langBtnEn').classList.toggle('active', LANG==='en');
+
+  buildHouseStyleOptions();
+  updateHouseStyleEditor();
+  buildPalette();
+  buildFloorTabs();
+  renderCurrentFloor();
+  updateTotals();
+}
+
+function setLanguage(lang){
+  if(lang===LANG) return;
+  LANG = lang;
+  localStorage.setItem(LANG_STORAGE_KEY, LANG);
+  applyTranslations();
+}
+document.getElementById('langBtnPt').addEventListener('click',()=>setLanguage('pt'));
+document.getElementById('langBtnEn').addEventListener('click',()=>setLanguage('en'));
+
 if(!restoreSavedLayout()){
   buildFloorTabs();
   updateTotals();
 }
+applyTranslations();
 initThree();
 </script>
 </body>
