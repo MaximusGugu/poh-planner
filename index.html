@@ -1194,14 +1194,26 @@ function overlapsOccupiedBelow(matrix,top,left,floorIndex){
   return false;
 }
 
+function hasStairAccessToFloor(floorIndex){
+  if(floorIndex<=0) return true;
+  return placedRooms.some(room=>{
+    if(!room.withStairs||room.floor!==floorIndex-1) return false;
+    return room.linkedIds.some(linkedId=>{
+      const linked=placedRooms.find(candidate=>candidate.id===linkedId);
+      return linked&&linked.floor===floorIndex;
+    });
+  });
+}
+
 function canPlaceNewRoom(matrix,top,left,withStairs=false){
   if(withStairs){
     if(currentFloor!==0 || !canPlaceOnFloor(matrix,top,left,currentFloor)) return false;
     const upperFloor=currentFloor+1;
     return !floors[upperFloor] || canPlaceOnFloor(matrix,top,left,upperFloor);
   }
-  return canPlaceOnFloor(matrix,top,left,currentFloor)
-    && !overlapsOccupiedBelow(matrix,top,left,currentFloor);
+  if(!canPlaceOnFloor(matrix,top,left,currentFloor)) return false;
+  return hasStairAccessToFloor(currentFloor)
+    || !overlapsOccupiedBelow(matrix,top,left,currentFloor);
 }
 
 function occupyCells(matrix, top, left, floorIndex=currentFloor){
